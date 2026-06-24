@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WhatsApp Business · ZDG</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="/i18n-data.js"></script>
+  <script src="/i18n.js"></script>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:radial-gradient(900px 500px at 100% -10%,rgba(34,197,94,.10),transparent 60%),#eef2f7;color:#0b1220}
+    .promo-foot{margin-top:1.25rem;font-size:.76rem;color:#64748b;text-align:center}
+    .promo-foot a{color:#4f46e5;font-weight:700;text-decoration:none}
+    .box{text-align:center;padding:2.5rem 2rem;max-width:440px;width:90%;background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 4px 24px rgba(0,0,0,.06)}
+    h3{font-size:1.1rem;font-weight:600;margin-bottom:.5rem}
+    p{font-size:.875rem;color:#64748b;line-height:1.5}
+    .spinner{width:40px;height:40px;border:3px solid #e2e8f0;border-top-color:#25D366;border-radius:50%;animation:spin .8s linear infinite;margin:1rem auto 0;display:none}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .error{color:#ef4444;margin-top:1rem;font-size:.85rem;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:.75rem 1rem;display:none;white-space:pre-line;text-align:left}
+    button{margin-top:1.25rem;padding:.65rem 1.5rem;background:#25D366;color:#fff;border:none;border-radius:8px;font-size:.875rem;font-weight:600;cursor:pointer}
+    button:hover{background:#1fba58}
+    button:disabled{opacity:.5;cursor:not-allowed}
+  </style>
+</head>
+<body>
+  <div class="box">
+    <img src="/assets/waba.png" alt="WhatsApp Business" style="width:56px;height:56px;object-fit:contain;margin:0 auto 1rem;display:block" />
+    <h3 id="title"></h3>
+    <p id="msg"></p>
+    <div class="spinner" id="spinner"></div>
+    <div class="error" id="err"></div>
+    <button id="btn" style="display:none" onclick="startSignup()"></button>
+  </div>
+  <div class="promo-foot" id="promoFoot"></div>
+
+  <script>
+    var APP_ID      = '{{APP_ID}}';
+    var CONFIG_ID   = '{{CONFIG_ID}}';
+    var API_VERSION = '{{API_VERSION}}';
+    var STATE       = '{{STATE}}';
+    var LANG        = '{{LANG}}';
+    if (window.I18N && LANG) window.I18N.setLang(LANG);
+    function T(k, v){ return window.I18N ? window.I18N.t(k, v) : k; }
+
+    var embeddedData = null;
+
+    function setMsg(t){ document.getElementById('msg').textContent = t; }
+    function spinner(on){ document.getElementById('spinner').style.display = on ? 'block':'none'; }
+    function showBtn(on){ document.getElementById('btn').style.display = on ? 'inline-block':'none'; }
+    function notifyOpener(ok){ try{ if(window.opener) window.opener.postMessage({type:'hub:connected',ok:!!ok}, window.location.origin); }catch(e){} }
+    function showError(t){
+      spinner(false); showBtn(false);
+      document.getElementById('title').textContent = T('cpop.errorTitle');
+      setMsg('');
+      var el = document.getElementById('err'); el.textContent = t; el.style.display = 'block';
+      el.style.background = '#fef2f2'; el.style.borderColor = '#fecaca'; el.style.color = '#ef4444';
+      notifyOpener(false);
+    }
+    function showInfo(t){
+      spinner(false); showBtn(false);
+      var el = document.getElementById('err');
+      el.textContent = t; el.style.display = 'block';
+      el.style.background = '#fffbeb'; el.style.borderColor = '#fde68a'; el.style.color = '#92400e';
+    }
+    function success(name, extra){
+      spinner(false); showBtn(false);
+      document.getElementById('title').textContent = T('cpop.waba.connectedTitle');
+      setMsg(T('cpop.waba.success', { name: name, extra: extra || '' }) + ' ' + T('cpop.willClose'));
+      notifyOpener(true);
+      setTimeout(function(){ try{ window.close(); }catch(e){} }, 2200);
+    }
+
+    (function initStatic(){
+      document.title = T('cpop.waba.title') + ' · ZDG';
+      document.getElementById('title').textContent = T('cpop.waba.title');
+      setMsg(T('common.loading'));
+      document.getElementById('btn').textContent = T('cpop.connectBtn');
+      var YT='https://www.youtube.com/channel/UCrPbAoQKz42Gm0mLdWatAEA', ZP='https://zpro.zdg.com.br/';
+      document.getElementById('promoFoot').innerHTML =
+        '<a href="'+YT+'" target="_blank" rel="noopener">'+T('result.footer')+'</a> · <a href="'+ZP+'" target="_blank" rel="noopener">'+T('result.knowZpro')+'</a>';
+    })();
+
+    window.fbAsyncInit = function(){
+      if(!APP_ID){ showError(T('cpop.appIdMissing')); return; }
+      FB.init({ appId: APP_ID, cookie: true, xfbml: true, version: API_VERSION });
+      if(!CONFIG_ID){
+        document.getElementById('title').textContent = T('cpop.waba.configMissingTitle');
+        setMsg(T('cpop.waba.configMissingMsg'));
+        showInfo(T('cpop.waba.configMissingInfo'));
+        return;
+      }
+      setMsg(T('cpop.waba.ready'));
+      spinner(false); showBtn(true);
+    };
+    (function(d,s,id){ var js,fjs=d.getElementsByTagName(s)[0]; if(d.getElementById(id))return; js=d.createElement(s); js.id=id; js.src='https://connect.facebook.net/en_US/sdk.js'; fjs.parentNode.insertBefore(js,fjs); }(document,'script','facebook-jssdk'));
+
+    window.addEventListener('message', function(e){
+      var ok = ['https://www.facebook.com','https://web.facebook.com','https://business.facebook.com'];
+      if(ok.indexOf(e.origin) === -1) return;
+      try{
+        var data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+        if(data && (data.event === 'FINISH' || data.event === 'FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING')){
+          var d = data.data || data;
+          if(d.waba_id || d.phone_number_id) embeddedData = { waba_id: d.waba_id, phone_number_id: d.phone_number_id };
+        }
+      }catch(err){}
+    });
+
+    function startSignup(){
+      if(!window.FB){ showError(T('cpop.sdkFail')); return; }
+      if(!CONFIG_ID){ showError(T('cpop.waba.configMissingBtn')); return; }
+      document.getElementById('btn').disabled = true;
+      setMsg(T('cpop.waiting')); spinner(true);
+
+      FB.login(function(response){
+        if(!response.authResponse || !response.authResponse.code){
+          spinner(false); document.getElementById('btn').disabled = false;
+          setMsg(T('cpop.cancelled')); notifyOpener(false);
+          return;
+        }
+        var code = response.authResponse.code;
+        setMsg(T('cpop.waba.exchanging')); spinner(true);
+
+        setTimeout(function(){
+          fetch('/api/connect/waba/exchange', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({
+              state: STATE, code: code,
+              waba_id: embeddedData && embeddedData.waba_id,
+              phone_number_id: embeddedData && embeddedData.phone_number_id,
+              redirectUri: window.location.origin + window.location.pathname
+            })
+          }).then(function(r){ return r.json().then(function(d){ return {ok:r.ok,data:d}; }); })
+            .then(function(res){
+              if(!res.ok) throw new Error((res.data && (res.data.message||res.data.error)) || T('cpop.connectError'));
+              var extra = res.data.subscribed ? '' : T('cpop.waba.subPending', { err: res.data.subscribeError || '?' });
+              success(res.data.name || T('cpop.waba.defaultName'), extra);
+            })
+            .catch(function(err){ showError(err.message || T('cpop.connectError')); document.getElementById('btn').disabled = false; });
+        }, 1500);
+      }, {
+        config_id: CONFIG_ID,
+        response_type: 'code',
+        override_default_response_type: true,
+        extras: { setup:{}, featureType:'whatsapp_business_app_onboarding', sessionInfoVersion:'3', version:'v3', is_hosted_es:true }
+      });
+    }
+  </script>
+</body>
+</html>

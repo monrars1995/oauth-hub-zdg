@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hub Meta Apps</title>
+  <link rel="icon" href="/favicon.ico" />
+  <script>(function(){try{if(localStorage.getItem('hub_theme')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+
+  <!-- ── Login ─────────────────────────────────────────────── -->
+  <div id="login" class="login-wrap hidden">
+    <div class="login-card">
+      <div class="login-logo"><img src="/assets/brand-icon.png" alt="Z-PRO" /></div>
+      <div class="brand" id="loginBrand">Hub Meta Apps</div>
+      <div class="sub" data-i18n="login.subtitle">Painel de conexão de canais Meta</div>
+      <form id="loginForm">
+        <input type="password" id="loginPass" autocomplete="current-password" data-i18n-ph="login.password" data-i18n-aria="login.password" />
+        <div class="err" id="loginErr" role="alert"></div>
+        <button class="btn" id="loginBtn" type="submit" style="width:100%" data-i18n="login.enter">Entrar</button>
+      </form>
+      <div class="login-foot">
+        <a href="https://zpro.zdg.com.br/" target="_blank" rel="noopener"><img src="/assets/zpro-logo.png" alt="Z-PRO" style="height:26px;margin:0 auto .6rem;display:block" /></a>
+        <div id="loginFoot"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── App ───────────────────────────────────────────────── -->
+  <div id="app" class="hidden">
+    <div class="layout">
+
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <div class="side-brand">
+          <div class="logo"><img src="/assets/brand-icon.png" alt="Z-PRO" /></div>
+          <div>
+            <div class="side-title" id="brandName">Hub Meta Apps</div>
+            <div class="side-sub" data-i18n="side.by">by Comunidade ZDG</div>
+          </div>
+        </div>
+
+        <nav class="side-nav" data-i18n-aria="nav.aria">
+          <button data-tab="channels" class="active" data-i18n-aria="nav.channels" aria-current="page">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            <span class="lbl" data-i18n="nav.channels">Canais</span>
+          </button>
+          <button data-tab="events" data-i18n-aria="nav.events">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+            <span class="lbl" data-i18n="nav.events">Interações</span>
+          </button>
+          <button data-tab="apps" data-i18n-aria="nav.apps">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+            <span class="lbl" data-i18n="nav.apps">Apps</span>
+          </button>
+          <button data-tab="guide" data-i18n-aria="nav.guide">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>
+            <span class="lbl" data-i18n="nav.guide">Guia</span>
+          </button>
+          <button data-tab="evidence" data-i18n-aria="nav.evidence">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            <span class="lbl" data-i18n="nav.evidence">Evidências</span>
+          </button>
+          <button data-tab="config" data-i18n-aria="nav.config">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            <span class="lbl" data-i18n="nav.config">Configuração</span>
+          </button>
+        </nav>
+
+        <div class="side-promo">
+          <img class="zpro-logo-dark" src="/assets/zpro-logo-dark.png" alt="Z-PRO" />
+          <div class="promo-text" data-i18n="side.promo">Plataforma completa de multiatendimento.</div>
+          <a class="promo-btn" href="https://zpro.zdg.com.br/" target="_blank" rel="noopener" data-i18n="side.knowZpro">Conheça o Z-PRO →</a>
+        </div>
+        <div class="side-community">
+          <a href="https://www.youtube.com/channel/UCrPbAoQKz42Gm0mLdWatAEA" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:-2px;margin-right:4px"><path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17"/><path d="m10 15 5-3-5-3z"/></svg><span data-i18n="side.youtube">Comunidade ZDG no YouTube</span></a>
+        </div>
+      </aside>
+
+      <!-- Content -->
+      <div class="content">
+        <header class="topbar">
+          <div class="page-title" id="pageTitle">Canais</div>
+          <div class="right">
+            <span class="status-dot" id="liveStatus" data-i18n="topbar.monitoring">monitorando</span>
+            <div class="lang-dd" id="langDD">
+              <button type="button" class="lang-dd-btn" id="langDDBtn" aria-haspopup="listbox" aria-expanded="false" data-i18n-aria="topbar.lang"><span id="langDDCur"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+              <ul class="lang-dd-menu" id="langDDMenu" role="listbox"></ul>
+            </div>
+            <button class="btn ghost icon-btn" id="themeBtn" data-i18n-title="topbar.theme" data-i18n-aria="topbar.theme"></button>
+            <button class="btn ghost" id="logoutBtn" data-i18n="topbar.logout">Sair</button>
+          </div>
+        </header>
+
+        <main>
+          <!-- Channels tab -->
+          <section id="tab-channels">
+            <div class="stats-grid" id="statsGrid">
+              <div class="stat-card"><div class="stat-ico apps"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg></div><div><div class="stat-num" id="statApps">–</div><div class="stat-lbl" data-i18n="stats.apps">Apps</div></div></div>
+              <div class="stat-card"><div class="stat-ico chan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z"/></svg></div><div><div class="stat-num" id="statChannels">–</div><div class="stat-lbl" data-i18n="stats.channels">Canais conectados</div></div></div>
+              <div class="stat-card"><div class="stat-ico evt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div><div><div class="stat-num" id="statEvents">–</div><div class="stat-lbl" data-i18n="stats.events">Interações (1h)</div></div></div>
+              <div class="stat-card"><div class="stat-ico fwd"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/></svg></div><div><div class="stat-num" id="statForwards">–</div><div class="stat-lbl" data-i18n="stats.forwards">Encaminhamentos (1h)</div></div></div>
+            </div>
+
+            <div id="onboarding" class="card onboarding hidden">
+              <h2 data-i18n="onboarding.title">Comece em 3 passos</h2>
+              <div class="desc" data-i18n="onboarding.desc">Configure seu primeiro app Meta e conecte um canal.</div>
+              <ol class="steps">
+                <li data-i18n-html="onboarding.step1"></li>
+                <li data-i18n-html="onboarding.step2"></li>
+                <li data-i18n-html="onboarding.step3"></li>
+              </ol>
+              <button class="btn" id="onbCreateApp" data-i18n="onboarding.cta">Criar primeiro app</button>
+            </div>
+
+            <div class="hero">
+              <div class="hero-tag" data-i18n="hero.tag">Ferramenta gratuita · Comunidade ZDG</div>
+              <h1 data-i18n="hero.title">Conecte canais Meta e acompanhe as interações em tempo real</h1>
+              <p data-i18n="hero.text">WhatsApp Business, Messenger e Instagram em vários apps.</p>
+              <div class="hero-actions">
+                <a class="btn accent" href="https://zpro.zdg.com.br/" target="_blank" rel="noopener" data-i18n="hero.knowZpro">Conheça o Z-PRO</a>
+                <a class="btn-outline" href="https://www.youtube.com/channel/UCrPbAoQKz42Gm0mLdWatAEA" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17"/><path d="m10 15 5-3-5-3z"/></svg> <span data-i18n="hero.youtube">Comunidade ZDG no YouTube</span></a>
+              </div>
+            </div>
+
+            <div class="card">
+              <h2 data-i18n="connect.title">Conectar um canal</h2>
+              <div class="desc" data-i18n="connect.desc">Escolha o app e autorize o canal pelo login do Meta.</div>
+              <div class="field" style="max-width:340px">
+                <label data-i18n="connect.appLabel">App</label>
+                <select id="connectApp"></select>
+              </div>
+              <div class="connect-row">
+                <button class="connect-btn" data-connect="waba">
+                  <img class="ch-logo" src="/assets/waba.png" alt="WhatsApp Business" />
+                  <span><span data-i18n="connect.waba">WhatsApp Business</span><small data-i18n="connect.wabaSub">Conta do WhatsApp</small></span>
+                </button>
+                <button class="connect-btn" data-connect="instagram">
+                  <img class="ch-logo" src="/assets/instagram.png" alt="Instagram" />
+                  <span><span data-i18n="connect.instagram">Instagram</span><small data-i18n="connect.instagramSub">Conta do Instagram</small></span>
+                </button>
+                <button class="connect-btn" data-connect="messenger">
+                  <img class="ch-logo" src="/assets/messenger.png" alt="Messenger" />
+                  <span><span data-i18n="connect.messenger">Messenger</span><small data-i18n="connect.messengerSub">Página do Facebook</small></span>
+                </button>
+              </div>
+              <div id="noAppsHint" class="hint hidden" style="margin-top:.75rem" data-i18n-html="connect.noApps"></div>
+            </div>
+
+            <div class="card">
+              <h2 data-i18n="channels.title">Canais conectados</h2>
+              <div class="desc" data-i18n="channels.desc">Cada canal recebe os webhooks do seu app diretamente neste hub.</div>
+              <div id="channelsList"></div>
+            </div>
+          </section>
+
+          <!-- Events tab -->
+          <section id="tab-events" class="hidden">
+            <div class="card">
+              <div class="feed-controls">
+                <div>
+                  <h2 data-i18n="events.title">Interações recebidas</h2>
+                  <div class="desc" style="margin:0" data-i18n="events.desc">Atualiza automaticamente conforme os apps Meta enviam webhooks.</div>
+                </div>
+                <div style="display:flex;gap:.5rem;align-items:center;">
+                  <label style="display:flex;align-items:center;gap:.35rem;font-size:.8rem;color:var(--muted)">
+                    <input type="checkbox" id="autoRefresh" checked /> <span data-i18n="events.auto">Auto</span>
+                  </label>
+                  <button class="btn secondary" id="refreshEvents" data-i18n="events.refresh">Atualizar</button>
+                  <button class="btn ghost" id="clearEvents" data-i18n="events.clear">Limpar</button>
+                </div>
+              </div>
+              <div class="feed-filters">
+                <input id="evtSearch" data-i18n-ph="events.searchPh" />
+                <select id="evtApp"><option value="" data-i18n="events.allApps">Todos os apps</option></select>
+                <select id="evtProduct">
+                  <option value="" data-i18n="events.allProducts">Todos os produtos</option>
+                  <option value="waba">WhatsApp</option>
+                  <option value="messenger">Messenger</option>
+                  <option value="instagram">Instagram</option>
+                </select>
+              </div>
+              <div id="eventsList"></div>
+            </div>
+          </section>
+
+          <!-- Apps tab -->
+          <section id="tab-apps" class="hidden">
+            <div class="card">
+              <div class="feed-controls">
+                <div>
+                  <h2 data-i18n="apps.title">Apps Meta</h2>
+                  <div class="desc" style="margin:0" data-i18n="apps.desc">Cada app tem credenciais, URL de webhook e destinos de encaminhamento próprios.</div>
+                </div>
+                <button class="btn" id="newAppBtn" data-i18n="apps.new">+ Novo app</button>
+              </div>
+              <div id="appsList"></div>
+            </div>
+          </section>
+
+          <!-- Config tab -->
+          <section id="tab-config" class="hidden">
+            <div class="card">
+              <h2 data-i18n="config.title">Geral</h2>
+              <div class="desc" data-i18n="config.desc">Preferências globais do painel.</div>
+              <div class="field" style="max-width:340px">
+                <label data-i18n="config.brandLabel">Nome de marca (painel)</label>
+                <input id="cfgBrand" placeholder="Hub Meta Apps" />
+              </div>
+              <button class="btn" id="saveSettings" data-i18n="config.save">Salvar</button>
+            </div>
+
+            <div class="card" style="background:linear-gradient(140deg,#f5f3ff,#eff6ff);border-color:#e0e7ff">
+              <img class="zpro-logo-light" src="/assets/zpro-logo.png" alt="Z-PRO" style="margin-bottom:1rem" />
+              <h2 data-i18n="config.aboutTitle">Sobre este projeto</h2>
+              <div class="desc" id="aboutDesc" style="margin-bottom:.75rem"></div>
+              <p style="font-size:.85rem;color:#475569;margin-bottom:1rem" data-i18n-html="config.aboutP"></p>
+              <a class="btn accent" href="https://zpro.zdg.com.br/" target="_blank" rel="noopener" data-i18n="config.aboutBtn">Acessar zpro.zdg.com.br</a>
+            </div>
+          </section>
+
+          <!-- Guide tab -->
+          <section id="tab-guide" class="hidden">
+            <div class="card guide-videos">
+              <h3 data-i18n="guide.videos.t"></h3>
+              <div class="desc" data-i18n="guide.videos.intro"></div>
+              <!--
+                Vídeos de apoio (primeiro na guia, antes do passo a passo), em carrossel
+                numa linha. Rótulos (guide.videos.v1..v5) = títulos reais do YouTube
+                (via oEmbed), iguais nos 3 locales. Miniaturas e IDs/URLs são fixos.
+              -->
+              <ul class="video-list">
+                <li>
+                  <a href="https://youtu.be/Mo9tDcvP9Tc" target="_blank" rel="noopener">
+                    <span class="vthumb-wrap">
+                      <img class="vthumb" src="https://img.youtube.com/vi/Mo9tDcvP9Tc/hqdefault.jpg" alt="" loading="lazy" />
+                      <svg class="vplay" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
+                    </span>
+                    <span class="vlabel" data-i18n="guide.videos.v1"></span>
+                  </a>
+                </li>
+                <li>
+                  <a href="https://youtu.be/opZvh-NKmtQ" target="_blank" rel="noopener">
+                    <span class="vthumb-wrap">
+                      <img class="vthumb" src="https://img.youtube.com/vi/opZvh-NKmtQ/hqdefault.jpg" alt="" loading="lazy" />
+                      <svg class="vplay" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
+                    </span>
+                    <span class="vlabel" data-i18n="guide.videos.v2"></span>
+                  </a>
+                </li>
+                <li>
+                  <a href="https://youtu.be/MpMQsRT6ba4" target="_blank" rel="noopener">
+                    <span class="vthumb-wrap">
+                      <img class="vthumb" src="https://img.youtube.com/vi/MpMQsRT6ba4/hqdefault.jpg" alt="" loading="lazy" />
+                      <svg class="vplay" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
+                    </span>
+                    <span class="vlabel" data-i18n="guide.videos.v3"></span>
+                  </a>
+                </li>
+                <li>
+                  <a href="https://youtu.be/HCFWdhL838o" target="_blank" rel="noopener">
+                    <span class="vthumb-wrap">
+                      <img class="vthumb" src="https://img.youtube.com/vi/HCFWdhL838o/hqdefault.jpg" alt="" loading="lazy" />
+                      <svg class="vplay" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
+                    </span>
+                    <span class="vlabel" data-i18n="guide.videos.v4"></span>
+                  </a>
+                </li>
+                <li>
+                  <a href="https://youtu.be/019ipHeExKU" target="_blank" rel="noopener">
+                    <span class="vthumb-wrap">
+                      <img class="vthumb" src="https://img.youtube.com/vi/019ipHeExKU/hqdefault.jpg" alt="" loading="lazy" />
+                      <svg class="vplay" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
+                    </span>
+                    <span class="vlabel" data-i18n="guide.videos.v5"></span>
+                  </a>
+                </li>
+              </ul>
+              <div class="hint" data-i18n="guide.videos.note" style="margin-top:.5rem"></div>
+            </div>
+            <div class="card">
+              <h2 data-i18n="guide.title">Como configurar seu app na Meta</h2>
+              <div class="desc" data-i18n="guide.intro"></div>
+              <a class="btn accent" href="https://developers.facebook.com/apps/" target="_blank" rel="noopener" data-i18n="guide.openMeta" style="display:inline-flex;margin-bottom:1.25rem"></a>
+              <h3 style="font-size:.95rem;margin-bottom:.6rem" data-i18n="guide.urlsTitle">URLs deste hub</h3>
+              <div class="url-box"><span class="lbl" data-i18n="guide.urlDomain"></span><code id="guideDomain">—</code><button class="btn secondary copy" id="copyDomain" data-i18n="apps.copy">Copiar</button></div>
+              <div class="url-box"><span class="lbl" data-i18n="guide.urlMsgr"></span><code id="guideMsgr">—</code><button class="btn secondary copy" id="copyMsgr" data-i18n="apps.copy">Copiar</button></div>
+              <div class="url-box"><span class="lbl" data-i18n="guide.urlWaba"></span><code id="guideWaba">—</code><button class="btn secondary copy" id="copyWaba" data-i18n="apps.copy">Copiar</button></div>
+              <div class="url-box"><span class="lbl" data-i18n="guide.urlRedirect"></span><code id="guideRedirect">—</code><button class="btn secondary copy" id="copyRedirect" data-i18n="apps.copy">Copiar</button></div>
+              <div class="url-box"><span class="lbl" data-i18n="guide.urlWebhook"></span><code id="guideWebhook">—</code></div>
+              <div class="hint" data-i18n-html="guide.urlNote" style="margin-top:.5rem"></div>
+            </div>
+            <div class="card guide-steps">
+              <div class="gstep"><h3 data-i18n="guide.s1.t"></h3><div data-i18n-html="guide.s1.b"></div></div>
+              <div class="gstep"><h3 data-i18n="guide.s2.t"></h3><div data-i18n-html="guide.s2.b"></div></div>
+              <div class="gstep"><h3 data-i18n="guide.s3.t"></h3><div data-i18n-html="guide.s3.b"></div></div>
+              <div class="gstep"><h3 data-i18n="guide.s4.t"></h3><div data-i18n-html="guide.s4.b"></div></div>
+              <div class="gstep"><h3 data-i18n="guide.s5.t"></h3><div data-i18n-html="guide.s5.b"></div></div>
+              <div class="gstep"><h3 data-i18n="guide.s6.t"></h3><div data-i18n-html="guide.s6.b"></div></div>
+              <div class="gstep"><h3 data-i18n="guide.s7.t"></h3><div data-i18n-html="guide.s7.b"></div></div>
+              <div class="gstep"><h3 data-i18n="guide.s8.t"></h3><div data-i18n-html="guide.s8.b"></div></div>
+            </div>
+            <div class="card guide-callout">
+              <h3 data-i18n="guide.callout.t"></h3>
+              <div data-i18n-html="guide.callout.b"></div>
+            </div>
+          </section>
+
+          <!-- Evidence (App Review) tab -->
+          <section id="tab-evidence" class="hidden">
+            <div class="card">
+              <h2 data-i18n="evidence.title">Evidências (App Review)</h2>
+              <div class="desc" data-i18n="evidence.desc"></div>
+              <div class="grid2">
+                <div class="field"><label for="evApp" data-i18n="evidence.app"></label><select id="evApp"></select></div>
+                <div class="field"><label for="evProduct" data-i18n="evidence.product"></label><select id="evProduct"></select></div>
+              </div>
+              <div class="grid2">
+                <div class="field"><label for="evSource" data-i18n="evidence.source"></label><select id="evSource"></select></div>
+                <div class="field" id="evChannelWrap" style="display:none"><label for="evChannel" data-i18n="evidence.channel"></label><select id="evChannel"></select></div>
+              </div>
+              <div class="field" id="evTokenWrap" style="display:none"><label for="evToken" data-i18n="evidence.token"></label><input id="evToken" placeholder="EAA..." /></div>
+              <div class="grid2" id="evParams"></div>
+              <label class="mode-toggle" style="margin-top:.6rem"><input type="checkbox" id="evWrites" /> <b data-i18n="evidence.allowWrites"></b></label>
+              <div class="hint" data-i18n="evidence.allowWritesHint"></div>
+              <div class="field" id="evRecipientWrap" style="display:none;margin-top:.6rem"><label for="evRecipient" data-i18n="evidence.recipient"></label><input id="evRecipient" placeholder="5535988888888" /></div>
+              <div style="margin-top:1rem;display:flex;gap:.6rem;align-items:center;flex-wrap:wrap">
+                <button class="btn" id="evRun" data-i18n="evidence.run">Rodar</button>
+                <button class="btn secondary" id="evDownload" style="display:none" data-i18n="evidence.download">Baixar evidência</button>
+                <span id="evSummary" class="hint"></span>
+              </div>
+              <div id="evResults" style="margin-top:1rem"></div>
+            </div>
+          </section>
+
+          <footer class="app-footer">
+            <span id="footerOffered"></span>
+            <span class="dot">·</span>
+            <a href="https://zpro.zdg.com.br/" target="_blank" rel="noopener" data-i18n="footer.zpro">Z-PRO — Plataforma de Multiatendimento</a>
+          </footer>
+        </main>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <script src="/i18n-data.js"></script>
+  <script src="/i18n.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>

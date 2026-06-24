@@ -1,0 +1,34 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# oauth-hub — orquestração Docker.
+#   1) cp .env.example .env   (e preencha PUBLIC_URL, SESSION_SECRET, ADMIN_PASSWORD…)
+#   2) docker compose up -d --build
+#
+# A porta INTERNA do container é fixada em 3300; escolha a porta do host com
+# HOST_PORT (padrão 3300). Ex.: HOST_PORT=8080 docker compose up -d
+# ─────────────────────────────────────────────────────────────────────────────
+services:
+  oauth-hub:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: oauth-hub:latest
+    container_name: oauth-hub
+    restart: unless-stopped
+
+    # Configuração e segredos (PUBLIC_URL, SESSION_SECRET, ADMIN_PASSWORD, META_*…).
+    env_file:
+      - .env
+
+    # Porta interna fixa em 3300 (sobrepõe qualquer PORT do .env); host = HOST_PORT.
+    environment:
+      - PORT=3300
+    ports:
+      - "${HOST_PORT:-3300}:3300"
+
+    # Persistência dos arquivos JSON (apps/canais/eventos/settings).
+    volumes:
+      - oauth-hub-data:/app/data
+
+volumes:
+  oauth-hub-data:
+    driver: local

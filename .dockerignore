@@ -1,0 +1,31 @@
+# Dependências e build — reconstruídos dentro da imagem
+node_modules
+dist
+
+# Dados de runtime e segredos — NUNCA entram na imagem (vão por volume / env)
+data
+.env
+.env.local
+.env.*.local
+*.pem
+
+# Logs
+*.log
+npm-debug.log*
+
+# Próprios arquivos de orquestração (não precisam ir no contexto da imagem)
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Git / editores / SO
+.git
+.gitignore
+.gitattributes
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+
+# Documentação
+README.md

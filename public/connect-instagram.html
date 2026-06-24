@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Instagram · ZDG</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="/i18n-data.js"></script>
+  <script src="/i18n.js"></script>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:radial-gradient(900px 500px at 100% -10%,rgba(225,48,108,.12),transparent 60%),#eef2f7;color:#0b1220}
+    .box{text-align:center;padding:2.5rem 2rem;max-width:440px;width:90%;background:#fff;border:1px solid #e3e8ef;border-radius:16px;box-shadow:0 12px 40px rgba(15,23,42,.10)}
+    h3{font-size:1.1rem;font-weight:700;margin-bottom:.5rem}
+    p{font-size:.875rem;color:#64748b;line-height:1.5}
+    .spinner{width:40px;height:40px;border:3px solid #e2e8f0;border-top-color:#E1306C;border-radius:50%;animation:spin .8s linear infinite;margin:1rem auto 0;display:none}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .error{color:#ef4444;margin-top:1rem;font-size:.85rem;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:.75rem 1rem;display:none;white-space:pre-line;text-align:left}
+    button{margin-top:1.25rem;padding:.65rem 1.5rem;background:#E1306C;color:#fff;border:none;border-radius:10px;font-size:.875rem;font-weight:700;cursor:pointer}
+    button:hover{background:#c62a5b}
+    button:disabled{opacity:.5;cursor:not-allowed}
+    .promo-foot{margin-top:1.25rem;font-size:.76rem;color:#64748b;text-align:center}
+    .promo-foot a{color:#4f46e5;font-weight:700;text-decoration:none}
+  </style>
+</head>
+<body>
+  <div class="box">
+    <img src="/assets/instagram.png" alt="Instagram" style="width:56px;height:56px;object-fit:contain;margin:0 auto 1rem;display:block" />
+    <h3 id="title"></h3>
+    <p id="msg"></p>
+    <div class="spinner" id="spinner"></div>
+    <div class="error" id="err"></div>
+    <button id="btn" onclick="startAuth()"></button>
+  </div>
+  <div class="promo-foot" id="promoFoot"></div>
+
+  <script>
+    var AUTH_URL = '{{AUTH_URL}}';
+    var LANG     = '{{LANG}}';
+    if (window.I18N && LANG) window.I18N.setLang(LANG);
+    function T(k, v){ return window.I18N ? window.I18N.t(k, v) : k; }
+
+    (function initStatic(){
+      document.title = T('cpop.ig.title') + ' · ZDG';
+      document.getElementById('title').textContent = T('cpop.ig.title');
+      document.getElementById('msg').textContent = T('cpop.ig.intro');
+      document.getElementById('btn').textContent = T('cpop.connectBtn');
+      var YT='https://www.youtube.com/channel/UCrPbAoQKz42Gm0mLdWatAEA', ZP='https://zpro.zdg.com.br/';
+      document.getElementById('promoFoot').innerHTML =
+        '<a href="'+YT+'" target="_blank" rel="noopener">'+T('result.footer')+'</a> · <a href="'+ZP+'" target="_blank" rel="noopener">'+T('result.knowZpro')+'</a>';
+    })();
+
+    function startAuth(){
+      var btn = document.getElementById('btn');
+      btn.disabled = true;
+      document.getElementById('msg').textContent = T('cpop.ig.redirecting');
+      document.getElementById('spinner').style.display = 'block';
+      if(!AUTH_URL){
+        document.getElementById('spinner').style.display = 'none';
+        var el = document.getElementById('err'); el.textContent = T('cpop.ig.appMissing'); el.style.display = 'block';
+        btn.disabled = false;
+        return;
+      }
+      window.location.href = AUTH_URL;
+    }
+  </script>
+</body>
+</html>

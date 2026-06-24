@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Messenger · ZDG</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="/i18n-data.js"></script>
+  <script src="/i18n.js"></script>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:radial-gradient(900px 500px at 100% -10%,rgba(14,165,233,.12),transparent 60%),#eef2f7;color:#0b1220}
+    .promo-foot{margin-top:1.25rem;font-size:.76rem;color:#64748b;text-align:center}
+    .promo-foot a{color:#4f46e5;font-weight:700;text-decoration:none}
+    .box{text-align:center;padding:2.5rem 2rem;max-width:440px;width:90%;background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 4px 24px rgba(0,0,0,.06)}
+    h3{font-size:1.1rem;font-weight:600;margin-bottom:.5rem}
+    p{font-size:.875rem;color:#64748b;line-height:1.5}
+    .spinner{width:40px;height:40px;border:3px solid #e2e8f0;border-top-color:#0084FF;border-radius:50%;animation:spin .8s linear infinite;margin:1rem auto 0;display:none}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .error{color:#ef4444;margin-top:1rem;font-size:.85rem;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:.75rem 1rem;display:none;white-space:pre-line;text-align:left}
+    .list{margin-top:1rem;text-align:left;font-size:.82rem;color:#334155}
+    .list div{padding:.3rem 0;border-bottom:1px solid #f1f5f9}
+    button{margin-top:1.25rem;padding:.65rem 1.5rem;background:#0084FF;color:#fff;border:none;border-radius:8px;font-size:.875rem;font-weight:600;cursor:pointer}
+    button:hover{background:#006ad1}
+    button:disabled{opacity:.5;cursor:not-allowed}
+  </style>
+</head>
+<body>
+  <div class="box">
+    <img src="/assets/messenger.png" alt="Messenger" style="width:56px;height:56px;object-fit:contain;margin:0 auto 1rem;display:block" />
+    <h3 id="title"></h3>
+    <p id="msg"></p>
+    <div class="spinner" id="spinner"></div>
+    <div class="error" id="err"></div>
+    <div class="list" id="list"></div>
+    <button id="btn" style="display:none" onclick="startLogin()"></button>
+  </div>
+  <div class="promo-foot" id="promoFoot"></div>
+
+  <script>
+    var APP_ID      = '{{APP_ID}}';
+    var CONFIG_ID   = '{{CONFIG_ID}}';
+    var API_VERSION = '{{API_VERSION}}';
+    var STATE       = '{{STATE}}';
+    var LANG        = '{{LANG}}';
+    if (window.I18N && LANG) window.I18N.setLang(LANG);
+    function T(k, v){ return window.I18N ? window.I18N.t(k, v) : k; }
+
+    function setMsg(t){ document.getElementById('msg').textContent = t; }
+    function spinner(on){ document.getElementById('spinner').style.display = on ? 'block':'none'; }
+    function showBtn(on){ document.getElementById('btn').style.display = on ? 'inline-block':'none'; }
+    function notifyOpener(ok){ try{ if(window.opener) window.opener.postMessage({type:'hub:connected',ok:!!ok}, window.location.origin); }catch(e){} }
+    function showError(t){
+      spinner(false); showBtn(false);
+      document.getElementById('title').textContent = T('cpop.errorTitle');
+      setMsg('');
+      var el = document.getElementById('err'); el.textContent = t; el.style.display = 'block';
+      notifyOpener(false);
+    }
+    // Pages scope mirrored from oauth-proxy's working Facebook/Messenger flow.
+    var MSGR_SCOPE = 'pages_show_list,pages_read_engagement,pages_manage_engagement,pages_manage_metadata,pages_messaging,business_management';
+    // Wrong/empty config result: show the error AND a button to retry through the
+    // classic Pages-scope login (works even when the config_id is a WhatsApp one).
+    function showRetryClassic(t){
+      spinner(false);
+      document.getElementById('title').textContent = T('cpop.errorTitle');
+      setMsg('');
+      var el = document.getElementById('err'); el.textContent = t; el.style.display = 'block';
+      var b = document.getElementById('btn');
+      b.textContent = T('cpop.msgr.retryClassic');
+      b.disabled = false; b.onclick = startClassicLogin;
+      showBtn(true);
+      notifyOpener(false);
+    }
+    function success(pages){
+      spinner(false); showBtn(false);
+      document.getElementById('title').textContent = T('cpop.msgr.connectedTitle');
+      var n = pages.length === 1 ? T('cpop.msgr.onePage') : T('cpop.msgr.nPages', { n: pages.length });
+      setMsg(n + ' ' + T('cpop.willClose'));
+      var l = document.getElementById('list');
+      l.innerHTML = pages.map(function(p){ return '<div>' + p.name + ' — ' + (p.subscribed ? T('cpop.msgr.webhookOk') : T('cpop.msgr.webhookPending')) + '</div>'; }).join('');
+      notifyOpener(true);
+      setTimeout(function(){ try{ window.close(); }catch(e){} }, 2800);
+    }
+
+    (function initStatic(){
+      document.title = T('cpop.msgr.title') + ' · ZDG';
+      document.getElementById('title').textContent = T('cpop.msgr.title');
+      setMsg(T('common.loading'));
+      document.getElementById('btn').textContent = T('cpop.connectBtn');
+      var YT='https://www.youtube.com/channel/UCrPbAoQKz42Gm0mLdWatAEA', ZP='https://zpro.zdg.com.br/';
+      document.getElementById('promoFoot').innerHTML =
+        '<a href="'+YT+'" target="_blank" rel="noopener">'+T('result.footer')+'</a> · <a href="'+ZP+'" target="_blank" rel="noopener">'+T('result.knowZpro')+'</a>';
+    })();
+
+    window.fbAsyncInit = function(){
+      if(!APP_ID){ showError(T('cpop.appIdMissing')); return; }
+      FB.init({ appId: APP_ID, cookie: true, xfbml: true, version: API_VERSION });
+      setMsg(T('cpop.msgr.ready'));
+      spinner(false); showBtn(true);
+    };
+    (function(d,s,id){ var js,fjs=d.getElementsByTagName(s)[0]; if(d.getElementById(id))return; js=d.createElement(s); js.id=id; js.src='https://connect.facebook.net/en_US/sdk.js'; fjs.parentNode.insertBefore(js,fjs); }(document,'script','facebook-jssdk'));
+
+    function sendExchange(payload){
+      setMsg(T('cpop.msgr.connecting')); spinner(true);
+      payload.state = STATE;
+      payload.redirectUri = window.location.origin + window.location.pathname;
+      fetch('/api/connect/messenger/exchange', {
+        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
+      }).then(function(r){ return r.json().then(function(d){ return {ok:r.ok,data:d}; }); })
+        .then(function(res){
+          if(!res.ok){
+            var d = res.data || {};
+            var code = d.error || '';
+            var ERR = { NO_PAGES: 'cpop.msgr.noPages', WRONG_CONFIG_WABA: 'cpop.msgr.wrongConfigWaba' };
+            var text = ERR[code] ? T(ERR[code]) : (d.message || d.error || T('cpop.connectError'));
+            if (d.detail) text += '\n' + d.detail;
+            // Pages came back empty (wrong/WABA config): offer the classic fallback.
+            if (code === 'WRONG_CONFIG_WABA' || code === 'NO_PAGES') { showRetryClassic(text); return; }
+            throw new Error(text);
+          }
+          success(res.data.pages || []);
+        })
+        .catch(function(err){ showError(err.message || T('cpop.connectError')); });
+    }
+
+    function startLogin(){
+      if(!window.FB){ showError(T('cpop.sdkFail')); return; }
+      document.getElementById('btn').disabled = true;
+      setMsg(T('cpop.waiting')); spinner(true);
+
+      if(CONFIG_ID){
+        FB.login(function(response){
+          if(!response.authResponse || !response.authResponse.code){
+            spinner(false); document.getElementById('btn').disabled = false;
+            setMsg(T('cpop.cancelled')); notifyOpener(false); return;
+          }
+          sendExchange({ code: response.authResponse.code, configId: CONFIG_ID, mode: 'config_id' });
+        }, { config_id: CONFIG_ID, response_type:'code', override_default_response_type:true });
+      } else {
+        startClassicLogin();
+      }
+    }
+
+    // Classic Facebook Login with explicit Pages scopes — mirrors the oauth-proxy
+    // flow. Used when no config_id is set, or as a fallback when the config_id
+    // returns a WhatsApp/no-Pages token.
+    function startClassicLogin(){
+      if(!window.FB){ showError(T('cpop.sdkFail')); return; }
+      var el = document.getElementById('err'); if(el) el.style.display = 'none';
+      document.getElementById('btn').disabled = true;
+      setMsg(T('cpop.waiting')); spinner(true);
+      FB.login(function(response){
+        if(!response.authResponse || !response.authResponse.accessToken){
+          spinner(false); document.getElementById('btn').disabled = false;
+          setMsg(T('cpop.cancelled')); notifyOpener(false); return;
+        }
+        sendExchange({ userToken: response.authResponse.accessToken, mode: 'classic' });
+      }, { scope: MSGR_SCOPE });
+    }
+  </script>
+</body>
+</html>
