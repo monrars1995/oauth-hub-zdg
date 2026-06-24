@@ -1,3 +1,20 @@
+// oauth-hub — Standalone whitelabel hub for Meta channels.
+// Copyright (C) 2026 Comunidade ZDG
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of version 3 of the GNU Affero General Public License as
+// published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+//
+// Source: https://github.com/pedroherpeto/oauth-hub-zdg
+
 // ─────────────────────────────────────────────────────────────────────────────
 // oauth-hub — standalone whitelabel hub (multi-app).
 // Connects Meta channels (WhatsApp Business, Messenger, Instagram) via each
@@ -102,15 +119,17 @@ function renderResultPage(res: Response, ok: boolean, lang: string, titleKey: st
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:radial-gradient(900px 500px at 100% -10%,rgba(79,70,229,.10),transparent 60%),#eef2f7;color:#0b1220}
-  .box{text-align:center;padding:2.5rem 2rem;max-width:440px;width:90%;background:#fff;border:1px solid #e3e8ef;border-radius:16px;box-shadow:0 12px 40px rgba(15,23,42,.10)}
+  :root{--bg:#f3f4f7;--card:#fff;--text:#0a0d15;--muted:#5b6473;--border:#e7e9f1}
+  @media (prefers-color-scheme:dark){:root{--bg:#07090f;--card:#11141d;--text:#e9eef7;--muted:#96a0b1;--border:#1f232f}}
+  body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:1rem;color:var(--text);background:radial-gradient(760px 440px at 100% -10%,rgba(16,185,129,.16),transparent 60%),var(--bg)}
+  .box{text-align:center;padding:2.5rem 2rem;max-width:440px;width:100%;background:var(--card);border:1px solid var(--border);border-radius:20px;box-shadow:0 30px 70px -22px rgba(8,12,22,.45)}
   .icon{margin-bottom:1rem}
-  .icon svg{width:52px;height:52px}
-  h3{font-size:1.1rem;font-weight:700;margin-bottom:.5rem;color:${color}}
-  p{font-size:.9rem;color:#475569;line-height:1.5}
-  a.back{display:inline-block;margin-top:1.25rem;padding:.6rem 1.4rem;background:#0b1220;color:#fff;border-radius:10px;text-decoration:none;font-size:.85rem;font-weight:700}
-  .promo-foot{margin-top:1.25rem;font-size:.76rem;color:#64748b;text-align:center}
-  .promo-foot a{color:#4f46e5;font-weight:700;text-decoration:none}
+  .icon svg{width:54px;height:54px}
+  h3{font-size:1.15rem;font-weight:800;letter-spacing:-.02em;margin-bottom:.5rem;color:${color}}
+  p{font-size:.9rem;color:var(--muted);line-height:1.55}
+  a.back{display:inline-block;margin-top:1.3rem;padding:.65rem 1.4rem;background:linear-gradient(180deg,#16c98c,#0ea372);color:#fff;border-radius:11px;text-decoration:none;font-size:.85rem;font-weight:700;box-shadow:0 12px 26px -10px rgba(16,185,129,.85)}
+  .promo-foot{margin-top:1.3rem;font-size:.76rem;color:var(--muted);text-align:center}
+  .promo-foot a{color:#0ea372;font-weight:700;text-decoration:none}
 </style></head><body>
 <div class="box">
   <div class="icon">${icon}</div>

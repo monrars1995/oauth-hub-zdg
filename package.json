@@ -2,6 +2,16 @@
   "name": "oauth-hub",
   "version": "1.0.0",
   "description": "Standalone whitelabel hub to connect Meta channels (WhatsApp Business, Messenger, Instagram) and receive their webhook interactions. No external license or backend dependency.",
+  "license": "AGPL-3.0-only",
+  "author": "Comunidade ZDG",
+  "homepage": "https://github.com/pedroherpeto/oauth-hub-zdg",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pedroherpeto/oauth-hub-zdg.git"
+  },
+  "bugs": {
+    "url": "https://github.com/pedroherpeto/oauth-hub-zdg/issues"
+  },
   "main": "dist/index.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",

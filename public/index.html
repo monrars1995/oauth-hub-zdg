@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Hub Meta Apps</title>
   <link rel="icon" href="/favicon.ico" />
-  <script>(function(){try{if(localStorage.getItem('hub_theme')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>
+  <script>(function(){try{var s=localStorage.getItem('hub_theme');var d=s?s==='dark':(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d)document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
@@ -16,7 +16,7 @@
   <!-- ── Login ─────────────────────────────────────────────── -->
   <div id="login" class="login-wrap hidden">
     <div class="login-card">
-      <div class="login-logo"><img src="/assets/brand-icon.png" alt="Z-PRO" /></div>
+      <div class="login-logo"><a href="https://zpro.zdg.com.br/" target="_blank" rel="noopener" aria-label="Z-PRO" style="display:flex;width:100%;height:100%"><img src="/assets/brand-icon.png" alt="Z-PRO" /></a></div>
       <div class="brand" id="loginBrand">Hub Meta Apps</div>
       <div class="sub" data-i18n="login.subtitle">Painel de conexão de canais Meta</div>
       <form id="loginForm">
@@ -31,6 +31,29 @@
     </div>
   </div>
 
+  <!-- ── Welcome (initial screen) ──────────────────────────── -->
+  <div id="welcome" class="welcome-wrap hidden">
+    <div class="welcome-card">
+      <a class="wc-logo" href="https://zpro.zdg.com.br/" target="_blank" rel="noopener" aria-label="Z-PRO"><img src="/assets/brand-icon.png" alt="Z-PRO" /></a>
+      <h1 data-i18n="welcome.title">Uma ferramenta gratuita da Comunidade ZDG</h1>
+      <p class="wc-lead" data-i18n="welcome.lead">Conecte WhatsApp Business, Messenger e Instagram e acompanhe os webhooks em tempo real.</p>
+      <div class="wc-channels">
+        <span class="wc-ch"><img src="/assets/waba.png" alt="" /> WhatsApp</span>
+        <span class="wc-ch"><img src="/assets/messenger.png" alt="" /> Messenger</span>
+        <span class="wc-ch"><img src="/assets/instagram.png" alt="" /> Instagram</span>
+      </div>
+      <div class="wc-actions">
+        <a class="btn yt" id="welcomeSubscribe" href="https://www.youtube.com/channel/UCrPbAoQKz42Gm0mLdWatAEA?sub_confirmation=1" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17"/><path d="m10 15 5-3-5-3z"/></svg>
+          <span data-i18n="welcome.subscribe">Inscreva-se no canal</span>
+        </a>
+        <a class="btn secondary" href="https://zpro.zdg.com.br/" target="_blank" rel="noopener" data-i18n="welcome.knowZpro">Conheça o Z-PRO</a>
+      </div>
+      <button class="wc-enter" id="welcomeEnter" type="button"><span data-i18n="welcome.enter">Acessar o painel</span> <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></button>
+      <div class="wc-foot"><a href="https://www.youtube.com/channel/UCrPbAoQKz42Gm0mLdWatAEA" target="_blank" rel="noopener" data-i18n="welcome.foot">by Comunidade ZDG</a></div>
+    </div>
+  </div>
+
   <!-- ── App ───────────────────────────────────────────────── -->
   <div id="app" class="hidden">
     <div class="layout">
@@ -38,26 +61,47 @@
       <!-- Sidebar -->
       <aside class="sidebar">
         <div class="side-brand">
-          <div class="logo"><img src="/assets/brand-icon.png" alt="Z-PRO" /></div>
-          <div>
+          <div class="logo"><a href="https://zpro.zdg.com.br/" target="_blank" rel="noopener" aria-label="Z-PRO" style="display:flex;width:100%;height:100%"><img src="/assets/brand-icon.png" alt="Z-PRO" /></a></div>
+          <button class="side-brand-text" id="brandHome" type="button" data-i18n-aria="welcome.enter">
             <div class="side-title" id="brandName">Hub Meta Apps</div>
             <div class="side-sub" data-i18n="side.by">by Comunidade ZDG</div>
-          </div>
+          </button>
         </div>
 
+        <div class="nav-label" data-i18n="nav.groupMonitor">Monitorar</div>
         <nav class="side-nav" data-i18n-aria="nav.aria">
-          <button data-tab="channels" class="active" data-i18n-aria="nav.channels" aria-current="page">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-            <span class="lbl" data-i18n="nav.channels">Canais</span>
+          <button data-tab="overview" class="active" data-i18n-aria="nav.overview" aria-current="page">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/></svg>
+            <span class="lbl" data-i18n="nav.overview">Visão geral</span>
           </button>
           <button data-tab="events" data-i18n-aria="nav.events">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
             <span class="lbl" data-i18n="nav.events">Interações</span>
           </button>
+          <button data-tab="channels" data-i18n-aria="nav.channels">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            <span class="lbl" data-i18n="nav.channels">Canais</span>
+            <span class="nav-count" id="navCountChannels" hidden></span>
+          </button>
+        </nav>
+
+        <div class="side-sep"></div>
+        <div class="nav-label" data-i18n="nav.groupManage">Gerenciar</div>
+        <nav class="side-nav">
           <button data-tab="apps" data-i18n-aria="nav.apps">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
             <span class="lbl" data-i18n="nav.apps">Apps</span>
+            <span class="nav-count" id="navCountApps" hidden></span>
           </button>
+          <button data-tab="config" data-i18n-aria="nav.config">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            <span class="lbl" data-i18n="nav.config">Configuração</span>
+          </button>
+        </nav>
+
+        <div class="side-sep"></div>
+        <div class="nav-label" data-i18n="nav.groupResources">Recursos</div>
+        <nav class="side-nav">
           <button data-tab="guide" data-i18n-aria="nav.guide">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>
             <span class="lbl" data-i18n="nav.guide">Guia</span>
@@ -66,117 +110,145 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
             <span class="lbl" data-i18n="nav.evidence">Evidências</span>
           </button>
-          <button data-tab="config" data-i18n-aria="nav.config">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-            <span class="lbl" data-i18n="nav.config">Configuração</span>
-          </button>
         </nav>
 
+        <div class="side-spacer"></div>
+
         <div class="side-promo">
-          <img class="zpro-logo-dark" src="/assets/zpro-logo-dark.png" alt="Z-PRO" />
+          <a href="https://zpro.zdg.com.br/" target="_blank" rel="noopener" aria-label="Z-PRO"><img class="zpro-logo-dark" src="/assets/zpro-logo-dark.png" alt="Z-PRO" /></a>
           <div class="promo-text" data-i18n="side.promo">Plataforma completa de multiatendimento.</div>
           <a class="promo-btn" href="https://zpro.zdg.com.br/" target="_blank" rel="noopener" data-i18n="side.knowZpro">Conheça o Z-PRO →</a>
         </div>
         <div class="side-community">
-          <a href="https://www.youtube.com/channel/UCrPbAoQKz42Gm0mLdWatAEA" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:-2px;margin-right:4px"><path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17"/><path d="m10 15 5-3-5-3z"/></svg><span data-i18n="side.youtube">Comunidade ZDG no YouTube</span></a>
+          <a href="https://www.youtube.com/channel/UCrPbAoQKz42Gm0mLdWatAEA" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:-2px"><path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17"/><path d="m10 15 5-3-5-3z"/></svg><span data-i18n="side.youtube">Comunidade ZDG no YouTube</span></a>
         </div>
       </aside>
 
       <!-- Content -->
       <div class="content">
         <header class="topbar">
-          <div class="page-title" id="pageTitle">Canais</div>
+          <div class="left">
+            <div class="page-title" id="pageTitle">Visão geral</div>
+          </div>
           <div class="right">
             <span class="status-dot" id="liveStatus" data-i18n="topbar.monitoring">monitorando</span>
+            <button class="cmdk-btn" id="cmdkBtn" data-i18n-aria="cmdk.open">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              <span data-i18n="cmdk.search">Buscar</span>
+              <span class="kbd" id="cmdkHint">Ctrl K</span>
+            </button>
             <div class="lang-dd" id="langDD">
               <button type="button" class="lang-dd-btn" id="langDDBtn" aria-haspopup="listbox" aria-expanded="false" data-i18n-aria="topbar.lang"><span id="langDDCur"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
               <ul class="lang-dd-menu" id="langDDMenu" role="listbox"></ul>
             </div>
-            <button class="btn ghost icon-btn" id="themeBtn" data-i18n-title="topbar.theme" data-i18n-aria="topbar.theme"></button>
+            <button class="btn icon-btn" id="themeBtn" data-i18n-title="topbar.theme" data-i18n-aria="topbar.theme"></button>
             <button class="btn ghost" id="logoutBtn" data-i18n="topbar.logout">Sair</button>
           </div>
         </header>
 
         <main>
-          <!-- Channels tab -->
-          <section id="tab-channels">
-            <div class="stats-grid" id="statsGrid">
-              <div class="stat-card"><div class="stat-ico apps"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg></div><div><div class="stat-num" id="statApps">–</div><div class="stat-lbl" data-i18n="stats.apps">Apps</div></div></div>
-              <div class="stat-card"><div class="stat-ico chan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z"/></svg></div><div><div class="stat-num" id="statChannels">–</div><div class="stat-lbl" data-i18n="stats.channels">Canais conectados</div></div></div>
-              <div class="stat-card"><div class="stat-ico evt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div><div><div class="stat-num" id="statEvents">–</div><div class="stat-lbl" data-i18n="stats.events">Interações (1h)</div></div></div>
-              <div class="stat-card"><div class="stat-ico fwd"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/></svg></div><div><div class="stat-num" id="statForwards">–</div><div class="stat-lbl" data-i18n="stats.forwards">Encaminhamentos (1h)</div></div></div>
-            </div>
-
-            <div id="onboarding" class="card onboarding hidden">
-              <h2 data-i18n="onboarding.title">Comece em 3 passos</h2>
-              <div class="desc" data-i18n="onboarding.desc">Configure seu primeiro app Meta e conecte um canal.</div>
-              <ol class="steps">
-                <li data-i18n-html="onboarding.step1"></li>
-                <li data-i18n-html="onboarding.step2"></li>
-                <li data-i18n-html="onboarding.step3"></li>
-              </ol>
-              <button class="btn" id="onbCreateApp" data-i18n="onboarding.cta">Criar primeiro app</button>
-            </div>
-
-            <div class="hero">
-              <div class="hero-tag" data-i18n="hero.tag">Ferramenta gratuita · Comunidade ZDG</div>
-              <h1 data-i18n="hero.title">Conecte canais Meta e acompanhe as interações em tempo real</h1>
-              <p data-i18n="hero.text">WhatsApp Business, Messenger e Instagram em vários apps.</p>
-              <div class="hero-actions">
-                <a class="btn accent" href="https://zpro.zdg.com.br/" target="_blank" rel="noopener" data-i18n="hero.knowZpro">Conheça o Z-PRO</a>
-                <a class="btn-outline" href="https://www.youtube.com/channel/UCrPbAoQKz42Gm0mLdWatAEA" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17"/><path d="m10 15 5-3-5-3z"/></svg> <span data-i18n="hero.youtube">Comunidade ZDG no YouTube</span></a>
+          <!-- ── Overview tab ─────────────────────────────────── -->
+          <section id="tab-overview">
+            <div class="bento">
+              <div class="col-3">
+                <div class="kpi">
+                  <div class="kpi-top">
+                    <div class="kpi-ico apps"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg></div>
+                  </div>
+                  <div class="kpi-num tnum" id="statApps">–</div>
+                  <div class="kpi-lbl" data-i18n="stats.apps">Apps</div>
+                </div>
+              </div>
+              <div class="col-3">
+                <div class="kpi">
+                  <div class="kpi-top">
+                    <div class="kpi-ico chan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z"/></svg></div>
+                  </div>
+                  <div class="kpi-num tnum" id="statChannels">–</div>
+                  <div class="kpi-lbl" data-i18n="stats.channels">Canais conectados</div>
+                  <div class="kpi-foot" id="kpiSubscribed"></div>
+                </div>
+              </div>
+              <div class="col-3">
+                <div class="kpi">
+                  <div class="kpi-top">
+                    <div class="kpi-ico evt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+                    <span class="kpi-trend flat" id="kpiEventsTrend"></span>
+                  </div>
+                  <div class="kpi-num tnum" id="statEvents">–</div>
+                  <div class="kpi-lbl" data-i18n="stats.events">Interações (1h)</div>
+                  <div class="kpi-spark" id="kpiEventsSpark"></div>
+                </div>
+              </div>
+              <div class="col-3">
+                <div class="kpi">
+                  <div class="kpi-top">
+                    <div class="kpi-ico fwd"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/></svg></div>
+                  </div>
+                  <div class="kpi-num tnum" id="statForwards">–</div>
+                  <div class="kpi-lbl" data-i18n="stats.forwards">Encaminhamentos (1h)</div>
+                </div>
               </div>
             </div>
 
-            <div class="card">
-              <h2 data-i18n="connect.title">Conectar um canal</h2>
-              <div class="desc" data-i18n="connect.desc">Escolha o app e autorize o canal pelo login do Meta.</div>
-              <div class="field" style="max-width:340px">
-                <label data-i18n="connect.appLabel">App</label>
-                <select id="connectApp"></select>
+            <div class="bento">
+              <div class="col-8">
+                <div class="card">
+                  <div class="card-head">
+                    <div>
+                      <div class="panel-eyebrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg><span data-i18n="overview.activity">Atividade — última hora</span></div>
+                    </div>
+                    <span class="chart-cap" id="activityPeak"></span>
+                  </div>
+                  <div id="activityChart" class="chart-wrap"></div>
+                </div>
               </div>
-              <div class="connect-row">
-                <button class="connect-btn" data-connect="waba">
-                  <img class="ch-logo" src="/assets/waba.png" alt="WhatsApp Business" />
-                  <span><span data-i18n="connect.waba">WhatsApp Business</span><small data-i18n="connect.wabaSub">Conta do WhatsApp</small></span>
-                </button>
-                <button class="connect-btn" data-connect="instagram">
-                  <img class="ch-logo" src="/assets/instagram.png" alt="Instagram" />
-                  <span><span data-i18n="connect.instagram">Instagram</span><small data-i18n="connect.instagramSub">Conta do Instagram</small></span>
-                </button>
-                <button class="connect-btn" data-connect="messenger">
-                  <img class="ch-logo" src="/assets/messenger.png" alt="Messenger" />
-                  <span><span data-i18n="connect.messenger">Messenger</span><small data-i18n="connect.messengerSub">Página do Facebook</small></span>
-                </button>
+              <div class="col-4">
+                <div class="card">
+                  <div class="panel-eyebrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v10l8-5"/><circle cx="12" cy="12" r="10"/></svg><span data-i18n="overview.mix">Mix de canais</span></div>
+                  <div id="channelMix"></div>
+                </div>
               </div>
-              <div id="noAppsHint" class="hint hidden" style="margin-top:.75rem" data-i18n-html="connect.noApps"></div>
             </div>
 
-            <div class="card">
-              <h2 data-i18n="channels.title">Canais conectados</h2>
-              <div class="desc" data-i18n="channels.desc">Cada canal recebe os webhooks do seu app diretamente neste hub.</div>
-              <div id="channelsList"></div>
+            <div class="bento">
+              <div class="col-7">
+                <div class="card">
+                  <div class="card-head">
+                    <div class="panel-eyebrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/></svg><span data-i18n="overview.recent">Interações recentes</span></div>
+                    <button class="btn ghost tiny" id="ovSeeConsole" data-i18n="overview.seeConsole">Abrir console →</button>
+                  </div>
+                  <div id="recentTicker"></div>
+                </div>
+              </div>
+              <div class="col-5">
+                <div class="card" id="ovSidePanel"></div>
+              </div>
             </div>
           </section>
 
-          <!-- Events tab -->
+          <!-- ── Console (events) tab ─────────────────────────── -->
           <section id="tab-events" class="hidden">
             <div class="card">
-              <div class="feed-controls">
-                <div>
-                  <h2 data-i18n="events.title">Interações recebidas</h2>
-                  <div class="desc" style="margin:0" data-i18n="events.desc">Atualiza automaticamente conforme os apps Meta enviam webhooks.</div>
+              <div class="console-bar">
+                <div class="live-block">
+                  <h2 data-i18n="events.title">Console ao vivo</h2>
+                  <button class="live-toggle" id="liveToggle" type="button" aria-pressed="true"><span class="ld"></span> <span id="liveToggleLbl" data-i18n="events.live">ao vivo</span></button>
                 </div>
-                <div style="display:flex;gap:.5rem;align-items:center;">
-                  <label style="display:flex;align-items:center;gap:.35rem;font-size:.8rem;color:var(--muted)">
-                    <input type="checkbox" id="autoRefresh" checked /> <span data-i18n="events.auto">Auto</span>
-                  </label>
-                  <button class="btn secondary" id="refreshEvents" data-i18n="events.refresh">Atualizar</button>
-                  <button class="btn ghost" id="clearEvents" data-i18n="events.clear">Limpar</button>
+                <div class="console-volume">
+                  <div class="cv-spark" id="consoleSpark"></div>
+                  <span class="cv-num" id="consoleVolNum"></span>
+                  <button class="btn ghost icon-btn tiny" id="soundToggle" type="button" data-i18n-title="events.sound" data-i18n-aria="events.sound"></button>
+                  <button class="btn secondary tiny" id="refreshEvents" data-i18n="events.refresh">Atualizar</button>
+                  <button class="btn ghost tiny" id="clearEvents" data-i18n="events.clear">Limpar</button>
                 </div>
               </div>
+              <div class="desc" data-i18n="events.desc">Atualiza automaticamente conforme os apps Meta enviam webhooks.</div>
               <div class="feed-filters">
-                <input id="evtSearch" data-i18n-ph="events.searchPh" />
+                <div class="search-wrap">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                  <input id="evtSearch" data-i18n-ph="events.searchPh" />
+                </div>
                 <select id="evtApp"><option value="" data-i18n="events.allApps">Todos os apps</option></select>
                 <select id="evtProduct">
                   <option value="" data-i18n="events.allProducts">Todos os produtos</option>
@@ -185,25 +257,40 @@
                   <option value="instagram">Instagram</option>
                 </select>
               </div>
-              <div id="eventsList"></div>
+              <div id="eventsList" class="console-stream"></div>
             </div>
           </section>
 
-          <!-- Apps tab -->
+          <!-- ── Channels tab ─────────────────────────────────── -->
+          <section id="tab-channels" class="hidden">
+            <div class="sec-head">
+              <div>
+                <h2 data-i18n="channels.title">Canais conectados</h2>
+                <div class="desc" data-i18n="channels.desc">Cada canal recebe os webhooks do seu app diretamente neste hub.</div>
+              </div>
+              <div class="actions">
+                <button class="btn" id="connectBtn" data-i18n="connect.cta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z"/></svg> Conectar canal</button>
+              </div>
+            </div>
+            <div id="noAppsHint" class="hint hidden" data-i18n-html="connect.noApps" style="margin-bottom:1rem"></div>
+            <div id="channelsList" class="health-grid"></div>
+          </section>
+
+          <!-- ── Apps tab ─────────────────────────────────────── -->
           <section id="tab-apps" class="hidden">
-            <div class="card">
-              <div class="feed-controls">
-                <div>
-                  <h2 data-i18n="apps.title">Apps Meta</h2>
-                  <div class="desc" style="margin:0" data-i18n="apps.desc">Cada app tem credenciais, URL de webhook e destinos de encaminhamento próprios.</div>
-                </div>
+            <div class="sec-head">
+              <div>
+                <h2 data-i18n="apps.title">Apps Meta</h2>
+                <div class="desc" data-i18n="apps.desc">Cada app tem credenciais, URL de webhook e destinos de encaminhamento próprios.</div>
+              </div>
+              <div class="actions">
                 <button class="btn" id="newAppBtn" data-i18n="apps.new">+ Novo app</button>
               </div>
-              <div id="appsList"></div>
             </div>
+            <div id="appsList"></div>
           </section>
 
-          <!-- Config tab -->
+          <!-- ── Config tab ───────────────────────────────────── -->
           <section id="tab-config" class="hidden">
             <div class="card">
               <h2 data-i18n="config.title">Geral</h2>
@@ -215,68 +302,48 @@
               <button class="btn" id="saveSettings" data-i18n="config.save">Salvar</button>
             </div>
 
-            <div class="card" style="background:linear-gradient(140deg,#f5f3ff,#eff6ff);border-color:#e0e7ff">
-              <img class="zpro-logo-light" src="/assets/zpro-logo.png" alt="Z-PRO" style="margin-bottom:1rem" />
+            <div class="card about-card">
+              <a href="https://zpro.zdg.com.br/" target="_blank" rel="noopener" aria-label="Z-PRO" style="display:inline-block;margin-bottom:1rem"><img class="zpro-logo-light" src="/assets/zpro-logo.png" alt="Z-PRO" /></a>
               <h2 data-i18n="config.aboutTitle">Sobre este projeto</h2>
               <div class="desc" id="aboutDesc" style="margin-bottom:.75rem"></div>
-              <p style="font-size:.85rem;color:#475569;margin-bottom:1rem" data-i18n-html="config.aboutP"></p>
-              <a class="btn accent" href="https://zpro.zdg.com.br/" target="_blank" rel="noopener" data-i18n="config.aboutBtn">Acessar zpro.zdg.com.br</a>
+              <p style="font-size:.85rem;color:var(--muted);margin-bottom:1rem" data-i18n-html="config.aboutP"></p>
+              <a class="btn" href="https://zpro.zdg.com.br/" target="_blank" rel="noopener" data-i18n="config.aboutBtn">Acessar zpro.zdg.com.br</a>
             </div>
           </section>
 
-          <!-- Guide tab -->
+          <!-- ── Guide tab ────────────────────────────────────── -->
           <section id="tab-guide" class="hidden">
             <div class="card guide-videos">
               <h3 data-i18n="guide.videos.t"></h3>
               <div class="desc" data-i18n="guide.videos.intro"></div>
-              <!--
-                Vídeos de apoio (primeiro na guia, antes do passo a passo), em carrossel
-                numa linha. Rótulos (guide.videos.v1..v5) = títulos reais do YouTube
-                (via oEmbed), iguais nos 3 locales. Miniaturas e IDs/URLs são fixos.
-              -->
               <ul class="video-list">
                 <li>
                   <a href="https://youtu.be/Mo9tDcvP9Tc" target="_blank" rel="noopener">
-                    <span class="vthumb-wrap">
-                      <img class="vthumb" src="https://img.youtube.com/vi/Mo9tDcvP9Tc/hqdefault.jpg" alt="" loading="lazy" />
-                      <svg class="vplay" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
-                    </span>
+                    <span class="vthumb-wrap"><img class="vthumb" src="https://img.youtube.com/vi/Mo9tDcvP9Tc/hqdefault.jpg" alt="" loading="lazy" /><svg class="vplay" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg></span>
                     <span class="vlabel" data-i18n="guide.videos.v1"></span>
                   </a>
                 </li>
                 <li>
                   <a href="https://youtu.be/opZvh-NKmtQ" target="_blank" rel="noopener">
-                    <span class="vthumb-wrap">
-                      <img class="vthumb" src="https://img.youtube.com/vi/opZvh-NKmtQ/hqdefault.jpg" alt="" loading="lazy" />
-                      <svg class="vplay" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
-                    </span>
+                    <span class="vthumb-wrap"><img class="vthumb" src="https://img.youtube.com/vi/opZvh-NKmtQ/hqdefault.jpg" alt="" loading="lazy" /><svg class="vplay" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg></span>
                     <span class="vlabel" data-i18n="guide.videos.v2"></span>
                   </a>
                 </li>
                 <li>
                   <a href="https://youtu.be/MpMQsRT6ba4" target="_blank" rel="noopener">
-                    <span class="vthumb-wrap">
-                      <img class="vthumb" src="https://img.youtube.com/vi/MpMQsRT6ba4/hqdefault.jpg" alt="" loading="lazy" />
-                      <svg class="vplay" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
-                    </span>
+                    <span class="vthumb-wrap"><img class="vthumb" src="https://img.youtube.com/vi/MpMQsRT6ba4/hqdefault.jpg" alt="" loading="lazy" /><svg class="vplay" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg></span>
                     <span class="vlabel" data-i18n="guide.videos.v3"></span>
                   </a>
                 </li>
                 <li>
                   <a href="https://youtu.be/HCFWdhL838o" target="_blank" rel="noopener">
-                    <span class="vthumb-wrap">
-                      <img class="vthumb" src="https://img.youtube.com/vi/HCFWdhL838o/hqdefault.jpg" alt="" loading="lazy" />
-                      <svg class="vplay" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
-                    </span>
+                    <span class="vthumb-wrap"><img class="vthumb" src="https://img.youtube.com/vi/HCFWdhL838o/hqdefault.jpg" alt="" loading="lazy" /><svg class="vplay" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg></span>
                     <span class="vlabel" data-i18n="guide.videos.v4"></span>
                   </a>
                 </li>
                 <li>
                   <a href="https://youtu.be/019ipHeExKU" target="_blank" rel="noopener">
-                    <span class="vthumb-wrap">
-                      <img class="vthumb" src="https://img.youtube.com/vi/019ipHeExKU/hqdefault.jpg" alt="" loading="lazy" />
-                      <svg class="vplay" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
-                    </span>
+                    <span class="vthumb-wrap"><img class="vthumb" src="https://img.youtube.com/vi/019ipHeExKU/hqdefault.jpg" alt="" loading="lazy" /><svg class="vplay" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg></span>
                     <span class="vlabel" data-i18n="guide.videos.v5"></span>
                   </a>
                 </li>
@@ -286,7 +353,7 @@
             <div class="card">
               <h2 data-i18n="guide.title">Como configurar seu app na Meta</h2>
               <div class="desc" data-i18n="guide.intro"></div>
-              <a class="btn accent" href="https://developers.facebook.com/apps/" target="_blank" rel="noopener" data-i18n="guide.openMeta" style="display:inline-flex;margin-bottom:1.25rem"></a>
+              <a class="btn" href="https://developers.facebook.com/apps/" target="_blank" rel="noopener" data-i18n="guide.openMeta" style="display:inline-flex;margin-bottom:1.25rem"></a>
               <h3 style="font-size:.95rem;margin-bottom:.6rem" data-i18n="guide.urlsTitle">URLs deste hub</h3>
               <div class="url-box"><span class="lbl" data-i18n="guide.urlDomain"></span><code id="guideDomain">—</code><button class="btn secondary copy" id="copyDomain" data-i18n="apps.copy">Copiar</button></div>
               <div class="url-box"><span class="lbl" data-i18n="guide.urlMsgr"></span><code id="guideMsgr">—</code><button class="btn secondary copy" id="copyMsgr" data-i18n="apps.copy">Copiar</button></div>
@@ -311,7 +378,7 @@
             </div>
           </section>
 
-          <!-- Evidence (App Review) tab -->
+          <!-- ── Evidence (App Review) tab ────────────────────── -->
           <section id="tab-evidence" class="hidden">
             <div class="card">
               <h2 data-i18n="evidence.title">Evidências (App Review)</h2>
@@ -342,6 +409,8 @@
             <span id="footerOffered"></span>
             <span class="dot">·</span>
             <a href="https://zpro.zdg.com.br/" target="_blank" rel="noopener" data-i18n="footer.zpro">Z-PRO — Plataforma de Multiatendimento</a>
+            <span class="dot">·</span>
+            <a id="footerSource" href="https://github.com/pedroherpeto/oauth-hub-zdg" target="_blank" rel="noopener" data-i18n="footer.source">Código-fonte (AGPL-3.0)</a>
           </footer>
         </main>
       </div>
