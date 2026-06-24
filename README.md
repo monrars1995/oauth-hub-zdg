@@ -1,4 +1,4 @@
-# Hub Meta Apps — oauth-hub
+# Hub Meta Apps — oauth-hub-zdg
 
 Hub **standalone**, **multi-app** e **whitelabel** para conectar canais da **Meta** — WhatsApp Business (Cloud API / Embedded Signup), **Messenger** (Páginas) e **Instagram** (Instagram Login) — **receber + visualizar** as interações (webhooks) e **rotear (encaminhar)** esses webhooks, por app, para outros sistemas.
 
@@ -20,6 +20,7 @@ Não valida licença e não depende de nenhum backend externo. Guarda os apps, c
 - **Modo histórico × transacional** — por app, escolha **salvar histórico** no painel ou apenas **encaminhar** (ponta a ponta) sem guardar nada.
 - **Botões de embed** — gere um botão de conexão para colar **fora do painel** (em qualquer site), por app/canal.
 - **Segurança** — App Secret só no servidor; tokens de canal nunca vão ao navegador; webhooks verificados por `X-Hub-Signature-256`; painel protegido por senha (opcional).
+- **Painel "Mission Control"** — **visão geral** (KPIs + gráfico de atividade da última hora + mix de canais), **console ao vivo** das interações (filtros, busca, payload com realce de sintaxe, som opcional), **canais como health cards** (status do webhook + sparkline), **command palette** (`Ctrl`/`⌘`+`K`), **tema claro/escuro**, layout **responsivo (mobile)** e **i18n** (pt / en / es). **Tela inicial** de boas-vindas com convite para o canal da Comunidade ZDG no YouTube.
 
 ---
 
@@ -28,7 +29,10 @@ Não valida licença e não depende de nenhum backend externo. Guarda os apps, c
 - Node.js 18+ (usa `fetch` e `crypto` nativos).
 
 ```bash
-cd extra/oauth-hub
+# repositório standalone:
+git clone https://github.com/pedroherpeto/oauth-hub-zdg.git && cd oauth-hub-zdg
+# (no monorepo zpro-passaporte o projeto fica em: extra/oauth-hub)
+
 npm install
 cp .env.example .env   # opcional — dá para configurar tudo pelo painel
 npm run build
@@ -42,7 +46,7 @@ Abra `http://localhost:3300`.
 Há `Dockerfile`, `.dockerignore` e `docker-compose.yml` prontos. A imagem é multi-stage (compila o TypeScript e mantém só as dependências de produção), roda como usuário não-root e expõe `GET /health` como healthcheck. Os dados (`data/`) persistem num volume e os segredos vêm do `.env` — **nenhuma credencial é embutida na imagem**.
 
 ```bash
-cd extra/oauth-hub
+cd oauth-hub-zdg              # ou extra/oauth-hub no monorepo
 cp .env.example .env          # preencha PUBLIC_URL, SESSION_SECRET, ADMIN_PASSWORD…
 docker compose up -d --build
 ```
