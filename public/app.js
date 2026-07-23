@@ -26,12 +26,9 @@
   function chName(p) { return CH_NAME[p] || p; }
   function prodLabel(p) { return p === "all" ? t("form.prodAll") : chName(p); }
 
-  // ── Lucide icons (inline SVG) ──────────────────────────────
+  // ── Conventional control icons (inline SVG) ───────────────
   var ICONS = {
     plug: '<path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z"/>',
-    grid: '<rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/>',
-    dash: '<rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/>',
-    inbox: '<polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>',
     moon: '<path d="M12 3a6.4 6.4 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
     sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>',
     x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
@@ -39,9 +36,6 @@
     check: '<path d="M20 6 9 17l-5-5"/>',
     alert: '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
     search: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
-    activity: '<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>',
-    book: '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>',
-    sliders: '<line x1="4" x2="4" y1="21" y2="14"/><line x1="4" x2="4" y1="10" y2="3"/><line x1="12" x2="12" y1="21" y2="12"/><line x1="12" x2="12" y1="8" y2="3"/><line x1="20" x2="20" y1="21" y2="16"/><line x1="20" x2="20" y1="12" y2="3"/><line x1="1" x2="7" y1="14" y2="14"/><line x1="9" x2="15" y1="8" y2="8"/><line x1="17" x2="23" y1="16" y2="16"/>',
     trendUp: '<polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>',
     sound: '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>',
     soundOff: '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="22" x2="16" y1="9" y2="15"/><line x1="16" x2="22" y1="9" y2="15"/>',
@@ -54,6 +48,12 @@
     chevron: '<path d="m6 9 6 6 6-6"/>'
   };
   function icon(name) { return '<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (ICONS[name] || "") + "</svg>"; }
+
+  var NEURO_ICONS = { overview: 1, events: 1, channels: 1, apps: 1, forwarding: 1, config: 1, guide: 1, evidence: 1 };
+  function neuroIcon(name) {
+    if (!Object.prototype.hasOwnProperty.call(NEURO_ICONS, name)) return "";
+    return '<svg class="neuro-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="/assets/neuro-icons.svg#ng-' + name + '"></use></svg>';
+  }
 
   var toastTimer = null;
   function toast(msg, isError) {
@@ -121,7 +121,7 @@
     return out;
   }
   function emptyState(name, title, sub) {
-    return '<div class="empty"><div class="empty-ico">' + icon(name) + "</div>" + esc(title) + (sub ? '<br><span class="empty-sub">' + esc(sub) + "</span>" : "") + "</div>";
+    return '<div class="empty"><div class="empty-ico">' + neuroIcon(name) + "</div>" + esc(title) + (sub ? '<br><span class="empty-sub">' + esc(sub) + "</span>" : "") + "</div>";
   }
 
   // ── SVG charts (no deps) ───────────────────────────────────
@@ -171,10 +171,8 @@
   function applyPromo() {
     var brand = t("brand.community");
     var brandLink = '<a href="' + BRAND_URL + '" target="_blank" rel="noopener"><b>' + esc(brand) + "</b></a>";
-    var brandPlain = '<a href="' + BRAND_URL + '" target="_blank" rel="noopener">' + esc(brand) + "</a>";
     var lf = $("loginFoot"); if (lf) lf.innerHTML = t("login.tool", { brand: brandLink });
     var ad = $("aboutDesc"); if (ad) ad.innerHTML = t("config.aboutDesc", { brand: brandLink });
-    var fo = $("footerOffered"); if (fo) fo.innerHTML = t("footer.offered", { brand: brandPlain });
   }
   function buildLangSwitcher() {
     var btn = $("langDDBtn"), cur = $("langDDCur"), menu = $("langDDMenu");
@@ -278,7 +276,7 @@
   }
   function renderRecentTicker() {
     var box = $("recentTicker"); if (!box) return;
-    if (!eventsBuffer.length) { box.innerHTML = emptyState("inbox", t("events.empty"), t("events.emptySub")); return; }
+    if (!eventsBuffer.length) { box.innerHTML = emptyState("events", t("events.empty"), t("events.emptySub")); return; }
     box.innerHTML = '<div class="ticker">' + eventsBuffer.slice(0, 6).map(function (ev) {
       return '<div class="ticker-row"><span class="tk-rail ' + esc(ev.product || "unknown") + '"></span>' +
         '<span class="tk-sum">' + esc(cleanSummary(ev.summary) || chName(ev.product)) + "</span>" +
@@ -389,7 +387,7 @@
     api("/api/config").then(function (c) {
       $("brandName").textContent = c.brandName; document.title = c.brandName; $("cfgBrand").value = c.brandName || "";
       publicUrl = c.publicUrl || "";
-      var fs = $("footerSource"); if (fs && c.sourceUrl) fs.href = c.sourceUrl;
+      var source = $("aboutSource"); if (source && c.sourceUrl) source.href = c.sourceUrl;
       fillGuideUrls();
     }).catch(function (e) { toast(e.message, true); });
   }
@@ -461,7 +459,7 @@
   }
   function renderApps(apps) {
     var el = $("appsList"); if (!el) return;
-    if (!apps.length) { el.innerHTML = emptyState("grid", t("apps.empty"), t("apps.emptySub")); return; }
+    if (!apps.length) { el.innerHTML = emptyState("apps", t("apps.empty"), t("apps.emptySub")); return; }
     var defined = t("apps.defined"), undef = '<b style="color:var(--warn)">' + esc(t("apps.undefined")) + "</b>";
     el.innerHTML = apps.map(function (a) {
       var modeBadge = a.storeEvents
@@ -658,7 +656,7 @@
   }
   function renderChannelsList() {
     var el = $("channelsList"); if (!el) return;
-    if (!chList.length) { el.innerHTML = emptyState("plug", t("channels.empty"), t("channels.emptySub")); return; }
+    if (!chList.length) { el.innerHTML = emptyState("channels", t("channels.empty"), t("channels.emptySub")); return; }
     el.innerHTML = chList.map(function (c) {
       var sub = c.subscribed
         ? '<span class="badge ok dot">' + esc(t("channels.webhookOk")) + "</span>"
@@ -852,7 +850,7 @@
     var el = $("eventsList"); if (!el) return;
     var list = eventsBuffer.filter(eventMatches);
     if (!list.length) {
-      el.innerHTML = eventsBuffer.length ? emptyState("inbox", t("events.noMatch"), t("events.noMatchSub")) : emptyState("inbox", t("events.empty"), t("events.emptySub"));
+      el.innerHTML = eventsBuffer.length ? emptyState("events", t("events.noMatch"), t("events.noMatchSub")) : emptyState("events", t("events.empty"), t("events.emptySub"));
       return;
     }
     var pages = Math.ceil(list.length / EVT_PAGE_SIZE);

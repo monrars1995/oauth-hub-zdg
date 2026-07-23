@@ -368,6 +368,11 @@ textarea:focus-visible, [tabindex]:focus-visible {
 /* ── App shell ────────────────────────────────────────────────────────────── */
 .layout { display: flex; min-height: 100vh; }
 
+.neuro-icon {
+  display: block; fill: none; stroke: currentColor; stroke-width: 1.75;
+  stroke-linecap: round; stroke-linejoin: round; overflow: visible;
+}
+
 .sidebar {
   width: var(--side-w); flex-shrink: 0;
   background: var(--surface);
@@ -400,7 +405,7 @@ textarea:focus-visible, [tabindex]:focus-visible {
   color: var(--muted); font-weight: 600; font-size: .86rem; letter-spacing: -.01em;
   transition: background .14s, color .14s;
 }
-.side-nav button svg { width: 17px; height: 17px; opacity: .9; transition: transform .15s var(--spring); flex-shrink: 0; }
+.side-nav button .neuro-icon { width: 18px; height: 18px; opacity: .9; transition: transform .15s var(--ease), color .15s var(--ease); flex-shrink: 0; }
 .side-nav button .lbl { flex: 1; min-width: 0; }
 .side-nav button .nav-count {
   font-size: .68rem; font-weight: 700; font-variant-numeric: tabular-nums;
@@ -408,9 +413,9 @@ textarea:focus-visible, [tabindex]:focus-visible {
   border-radius: var(--pill); padding: .04rem .42rem;
 }
 .side-nav button:hover { background: var(--surface-2); color: var(--text); }
-.side-nav button:hover svg { transform: translateX(1px); }
+.side-nav button:hover .neuro-icon { transform: translateX(1px); }
 .side-nav button.active { color: var(--text); background: var(--signal-soft); border-color: var(--signal-border); }
-.side-nav button.active svg { color: var(--signal); opacity: 1; }
+.side-nav button.active .neuro-icon { color: var(--signal); opacity: 1; }
 .side-nav button.active .nav-count { color: var(--signal-ink); background: var(--signal-soft); border-color: var(--signal-border); }
 
 .side-spacer { flex: 1; }
@@ -523,8 +528,15 @@ section[id^="tab-"].tab-enter { animation: tabIn .34s var(--ease); }
 }
 .kpi:hover { transform: translateY(-2px); box-shadow: var(--sh-md), var(--top-hi); border-color: var(--border-strong); }
 .kpi .kpi-top { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
-.kpi .kpi-ico { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #fff; flex-shrink: 0; }
-.kpi .kpi-ico svg { width: 18px; height: 18px; }
+.kpi .kpi-ico {
+  position: relative; width: 40px; height: 40px; border-radius: 13px 13px 5px 13px;
+  display: flex; align-items: center; justify-content: center; color: #fff; flex-shrink: 0;
+}
+.kpi .kpi-ico::after {
+  content: ""; position: absolute; right: 4px; bottom: 4px; width: 3px; height: 3px;
+  border-radius: 50%; background: currentColor; opacity: .48;
+}
+.kpi .kpi-ico .neuro-icon { position: relative; z-index: 1; width: 24px; height: 24px; }
 .kpi-ico.apps { background: #5753b8; }
 .kpi-ico.chan { background: var(--signal-grad); }
 .kpi-ico.evt { background: #c97816; }
@@ -750,8 +762,8 @@ section[id^="tab-"].tab-enter { animation: tabIn .34s var(--ease); }
 @keyframes railFlash { 0% { opacity: 1; background: color-mix(in srgb, var(--signal) 8%, transparent); } 100% { opacity: 0; background: transparent; } }
 
 .empty { color: var(--muted); text-align: center; padding: 2.6rem 1rem; font-size: .86rem; }
-.empty-ico { width: 54px; height: 54px; margin: 0 auto .85rem; border-radius: 15px; display: flex; align-items: center; justify-content: center; background: var(--surface-2); border: 1px solid var(--border); color: var(--muted-2); }
-.empty-ico svg { width: 26px; height: 26px; }
+.empty-ico { width: 60px; height: 60px; margin: 0 auto .85rem; border-radius: 18px 18px 7px 18px; display: flex; align-items: center; justify-content: center; background: var(--surface-2); border: 1px solid var(--border); color: var(--muted-2); }
+.empty-ico .neuro-icon { width: 32px; height: 32px; }
 .empty-sub { font-size: .78rem; color: var(--muted-2); }
 
 /* ── Skeleton ─────────────────────────────────────────────────────────────── */
@@ -852,11 +864,11 @@ section[id^="tab-"].tab-enter { animation: tabIn .34s var(--ease); }
 /* ── Brand logos / About ──────────────────────────────────────────────────── */
 .about-card .brand-mark { width: 64px; height: 64px; }
 .about-card { background: var(--signal-soft); border-color: var(--signal-border); }
+.about-actions { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; }
 
 /* ── Footer ───────────────────────────────────────────────────────────────── */
 .app-footer { margin: auto auto 0; max-width: var(--maxw); width: 100%; padding: 1.5rem 1.5rem 2rem; display: flex; align-items: center; justify-content: center; gap: .6rem; flex-wrap: wrap; color: var(--muted-2); font-size: .78rem; text-align: center; }
 .app-footer a { font-weight: 700; }
-.app-footer .dot { color: var(--muted-3); }
 
 /* ── Toast ────────────────────────────────────────────────────────────────── */
 .toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%) translateY(10px); display: inline-flex; align-items: center; gap: .55rem; background: var(--text); color: var(--bg); padding: .7rem 1.1rem; border-radius: var(--r); font-size: .85rem; font-weight: 600; box-shadow: var(--sh-lg); opacity: 0; transition: opacity .2s, transform .2s var(--spring); pointer-events: none; z-index: 140; max-width: 90vw; }
@@ -908,7 +920,6 @@ section[id^="tab-"].tab-enter { animation: tabIn .34s var(--ease); }
   main { padding: 1rem .9rem; }
   .card { padding: 1.1rem 1rem; }
   .app-footer { flex-direction: column; gap: .4rem; padding: 1.25rem 1rem 1.5rem; line-height: 1.4; }
-  .app-footer .dot { display: none; }
   .welcome-wrap { padding: 1rem; }
   .welcome-card { padding: 2rem 1.3rem; }
   .welcome-card h1 { font-size: 1.35rem; }

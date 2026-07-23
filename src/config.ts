@@ -58,7 +58,7 @@ export const CORS_ALLOWED_ORIGINS = env("CORS_ALLOWED_ORIGINS")
   .filter(Boolean);
 
 // AGPL-3.0 §13: remote users must be able to obtain the Corresponding Source.
-// Shown as a "Source" link in the panel footer. Override via env if you fork.
+// Shown as a public repository link in Configuration > About. Override via env if you fork.
 export const SOURCE_URL = (env("SOURCE_URL") || "https://github.com/monrars1995/oauth-hub-zdg").replace(/\/$/, "");
 
 const DEFAULT_BRAND = "NeuroHub Meta";

@@ -5,6 +5,7 @@ const fs = require("node:fs");
 const net = require("node:net");
 const os = require("node:os");
 const path = require("node:path");
+const vm = require("node:vm");
 const { spawn } = require("node:child_process");
 
 const ROOT = path.resolve(__dirname, "..");
@@ -843,6 +844,98 @@ test("visible surfaces use NeuroHub Meta and the login omits redundant trust cop
     assert.equal(Object.hasOwn(copy, "login.purpose"), false);
     assert.equal(Object.hasOwn(copy, "login.restricted"), false);
     assert.equal(Object.hasOwn(copy, "login.securityNote"), false);
+  }
+});
+
+test("the NeuroCircuit family replaces generic product icons with one safe reusable sprite", () => {
+  const spritePath = path.join(ROOT, "public", "assets", "neuro-icons.svg");
+  const html = fs.readFileSync(path.join(ROOT, "public", "index.html"), "utf8");
+  const app = fs.readFileSync(path.join(ROOT, "public", "app.js"), "utf8");
+  const styles = fs.readFileSync(path.join(ROOT, "public", "styles.css"), "utf8");
+  const design = fs.readFileSync(path.join(ROOT, "DESIGN.md"), "utf8");
+  const names = ["overview", "events", "channels", "apps", "forwarding", "config", "guide", "evidence"];
+
+  assert.equal(fs.existsSync(spritePath), true, "the local NeuroCircuit sprite must exist");
+  const sprite = fs.readFileSync(spritePath, "utf8");
+
+  for (const name of names) {
+    assert.equal((sprite.match(new RegExp(`id="ng-${name}"`, "g")) || []).length, 1, `${name} must have one symbol`);
+    assert.match(sprite, new RegExp(`<symbol id="ng-${name}" viewBox="0 0 24 24"`));
+    assert.match(html, new RegExp(`/assets/neuro-icons\\.svg#ng-${name}`));
+  }
+
+  assert.doesNotMatch(sprite, /<script\b|on[a-z]+\s*=|<filter\b|<foreignObject\b|<image\b|(?:xlink:)?href\s*=|url\(/i);
+  assert.doesNotMatch(sprite, /linearGradient|radialGradient|feGaussianBlur|feDropShadow/i);
+  assert.match(app, /function neuroIcon\(name\)/);
+  assert.match(app, /Object\.prototype\.hasOwnProperty\.call\(NEURO_ICONS, name\)/);
+  assert.match(app, /emptyState\(name, title, sub\)[\s\S]*neuroIcon\(name\)/);
+  assert.doesNotMatch(app, /emptyState\("(?:grid|plug|inbox)"/);
+
+  const helperSource = app.match(/  var NEURO_ICONS = [^\n]+;\n  function neuroIcon\(name\) \{[\s\S]*?\n  \}/);
+  assert.ok(helperSource, "the NeuroCircuit helper must remain directly testable");
+  const sandbox = {};
+  vm.runInNewContext(`${helperSource[0]}\nresult = {
+    valid: neuroIcon("apps"),
+    inherited: neuroIcon("constructor"),
+    prototype: neuroIcon("__proto__"),
+    invalid: neuroIcon("../external"),
+  };`, sandbox);
+  assert.match(sandbox.result.valid, /neuro-icons\.svg#ng-apps/);
+  assert.equal(sandbox.result.inherited, "");
+  assert.equal(sandbox.result.prototype, "");
+  assert.equal(sandbox.result.invalid, "");
+  assert.match(app, /plug:\s*'<path/);
+  assert.match(app, /function icon\(name\)/);
+
+  const navSymbols = {
+    overview: "overview",
+    events: "events",
+    channels: "channels",
+    apps: "apps",
+    config: "config",
+    guide: "guide",
+    evidence: "evidence",
+  };
+  for (const [tab, symbol] of Object.entries(navSymbols)) {
+    assert.match(html, new RegExp(`data-tab="${tab}"[\\s\\S]*?/assets/neuro-icons\\.svg#ng-${symbol}[\\s\\S]*?<span class="lbl"`));
+  }
+
+  const kpiSymbols = ["apps", "channels", "events", "forwarding"];
+  for (const symbol of kpiSymbols) {
+    assert.match(html, new RegExp(`class="kpi-ico [^"]+"[\\s\\S]*?/assets/neuro-icons\\.svg#ng-${symbol}`));
+  }
+
+  assert.match(styles, /\.neuro-icon\s*\{/);
+  assert.match(styles, /\.side-nav button \.neuro-icon\s*\{[^}]*width:\s*18px;[^}]*height:\s*18px;/s);
+  assert.match(styles, /\.kpi \.kpi-ico \.neuro-icon\s*\{[^}]*width:\s*24px;[^}]*height:\s*24px;/s);
+  assert.match(styles, /\.empty-ico \.neuro-icon\s*\{[^}]*width:\s*32px;[^}]*height:\s*32px;/s);
+  assert.match(design, /## Iconografia NeuroCircuit[\s\S]*grade óptica `24×24`[\s\S]*### Decision log da iconografia/);
+});
+
+test("the application footer is a single by @goldneuron.io signature while source remains available", () => {
+  const html = fs.readFileSync(path.join(ROOT, "public", "index.html"), "utf8");
+  const app = fs.readFileSync(path.join(ROOT, "public", "app.js"), "utf8");
+  const readme = fs.readFileSync(path.join(ROOT, "README.md"), "utf8");
+  const footer = html.match(/<footer class="app-footer">([\s\S]*?)<\/footer>/);
+
+  assert.ok(footer, "the application footer must exist");
+  assert.match(footer[1], /data-i18n="footer\.by">by @goldneuron\.io<\/a>/);
+  assert.doesNotMatch(footer[1], /footerOffered|footerSource|class="dot"|Mantido pela|Código-fonte|AGPL-3\.0/);
+  assert.equal((footer[1].match(/<a\b/g) || []).length, 1);
+
+  assert.match(html, /id="aboutSource"[^>]*data-i18n="config\.sourceBtn"/);
+  assert.match(app, /\$\("aboutSource"\)[\s\S]*?c\.sourceUrl/);
+  assert.doesNotMatch(app, /footerOffered|footerSource|footer\.offered/);
+  assert.match(readme, /Repositório público[^\n]*Configuração → Sobre|Configuração → Sobre[\s\S]*Repositório público/);
+  assert.doesNotMatch(readme, /link \*\*"Código-fonte"\*\* no rodapé/);
+
+  for (const locale of ["pt", "en", "es"]) {
+    const copy = JSON.parse(fs.readFileSync(path.join(ROOT, "locales", `${locale}.json`), "utf8"));
+    assert.equal(copy["footer.by"], "by @goldneuron.io");
+    assert.equal(Object.hasOwn(copy, "footer.offered"), false);
+    assert.equal(Object.hasOwn(copy, "footer.zpro"), false);
+    assert.equal(Object.hasOwn(copy, "footer.source"), false);
+    assert.equal(typeof copy["config.sourceBtn"], "string");
   }
 });
 

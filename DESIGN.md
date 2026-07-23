@@ -35,6 +35,25 @@ A estratégia é restrita: neutros dominam a interface e o dourado aparece apena
 - Estados obrigatórios: hover, focus-visible, active, disabled, loading, error.
 - Movimento de 150–250 ms e alternativa para `prefers-reduced-motion`.
 
+## Iconografia NeuroCircuit
+
+- Propósito: tornar a taxonomia operacional reconhecível como NeuroHub Meta sem sacrificar leitura imediata.
+- Família própria em grade óptica `24×24`, com stroke `1.75`, terminais circulares, cantos arredondados e trilhas assimétricas conectadas a um núcleo aberto.
+- Símbolos de produto: `overview`, `events`, `channels`, `apps`, `forwarding`, `config`, `guide` e `evidence`.
+- Escalas fixas: `18px` na sidebar e navegação móvel, `24px` nos KPIs e `32px` nos estados vazios.
+- O mesmo símbolo deve ser reutilizado entre navegação, resumo e contexto; não duplicar geometrias em HTML e JavaScript.
+- Ícones acompanhados de texto usam `aria-hidden="true"`; controles icon-only dependem de nome acessível no elemento pai.
+- Cor não é o único diferenciador: cada módulo precisa de silhueta e topologia próprias em dark e light.
+- Estados usam mudança sólida de cor, borda e placa fosca; não usar glow, filtros, gradientes, animação ornamental ou dependência externa.
+- Controles universais, como busca, setas, fechar e confirmação, permanecem convencionais para preservar familiaridade.
+
+### Decision log da iconografia
+
+- NeuroCircuit foi escolhida em vez de NeuroMonograma e sigilos sólidos por equilibrar identidade proprietária, clareza semântica, acessibilidade e manutenção.
+- Apps passa de grade 2×2 para constelação modular; Canais, de plugue para gateway convergente; Interações, de raio para pulso com núcleo; Encaminhamentos, de compartilhamento para rota de pacote bifurcada.
+- Um sprite SVG local com `currentColor` foi escolhido em vez de biblioteca de ícones ou arquivos rasterizados para garantir consistência, cache, CSP e auditabilidade.
+- KPIs preservam seus papéis cromáticos; sidebar usa os mesmos glifos sem placa e estados vazios usam a variante ampliada.
+
 ## Uso do logotipo
 
 - Arquivo local, sem carregamento remoto em runtime.

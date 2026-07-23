@@ -150,10 +150,10 @@ Licenciado sob a **[GNU Affero General Public License v3.0](./LICENSE)**.
 
 Por ser um serviço de rede, a AGPL (§13) exige que os usuários que interagem com o
 hub remotamente possam obter o **código-fonte correspondente** da versão em execução.
-O painel exibe um link **"Código-fonte"** no rodapé apontando para o repositório
-(`SOURCE_URL`, padrão <https://github.com/monrars1995/oauth-hub-zdg>). Se você
-modificar e publicar uma instância, mantenha esse link acessível e atualizado para a
-sua versão.
+O painel oferece o link **"Repositório público"** em **Configuração → Sobre**, apontando
+para o código da versão publicada (`SOURCE_URL`, padrão
+<https://github.com/monrars1995/oauth-hub-zdg>). Se você modificar e publicar uma
+instância, mantenha esse acesso disponível e atualizado para a sua versão.
 
 ---
 
