@@ -1,21 +1,21 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# oauth-hub — orquestração Docker.
-#   1) cp .env.example .env   (e preencha PUBLIC_URL, SESSION_SECRET, ADMIN_PASSWORD…)
+# Meta AppHub by @goldneuron.io — orquestração Docker.
+#   1) cp .env.example .env   (preencha PUBLIC_URL, SESSION_SECRET, DATA_ENCRYPTION_KEY e ADMIN_PASSWORD)
 #   2) docker compose up -d --build
 #
 # A porta INTERNA do container é fixada em 3300; escolha a porta do host com
 # HOST_PORT (padrão 3300). Ex.: HOST_PORT=8080 docker compose up -d
 # ─────────────────────────────────────────────────────────────────────────────
 services:
-  oauth-hub:
+  meta-apphub:
     build:
       context: .
       dockerfile: Dockerfile
-    image: oauth-hub:latest
-    container_name: oauth-hub
+    image: goldneuron-meta-apphub:latest
+    container_name: goldneuron-meta-apphub
     restart: unless-stopped
 
-    # Configuração e segredos (PUBLIC_URL, SESSION_SECRET, ADMIN_PASSWORD, META_*…).
+    # Configuração e segredos (PUBLIC_URL, SESSION_SECRET, DATA_ENCRYPTION_KEY, ADMIN_PASSWORD, META_*…).
     env_file:
       - .env
 
@@ -27,8 +27,8 @@ services:
 
     # Persistência dos arquivos JSON (apps/canais/eventos/settings).
     volumes:
-      - oauth-hub-data:/app/data
+      - goldneuron-meta-apphub-data:/app/data
 
 volumes:
-  oauth-hub-data:
+  goldneuron-meta-apphub-data:
     driver: local

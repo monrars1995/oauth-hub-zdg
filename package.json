@@ -1,34 +1,34 @@
 {
-  "name": "oauth-hub",
-  "version": "1.0.0",
-  "description": "Standalone whitelabel hub to connect Meta channels (WhatsApp Business, Messenger, Instagram) and receive their webhook interactions. No external license or backend dependency.",
+  "name": "goldneuron-meta-apphub",
+  "version": "1.1.0",
+  "description": "Meta AppHub by @goldneuron.io: OAuth onboarding, authenticated Meta webhooks and secure event forwarding.",
   "license": "AGPL-3.0-only",
-  "author": "Comunidade ZDG",
-  "homepage": "https://github.com/pedroherpeto/oauth-hub-zdg",
+  "author": "@goldneuron.io",
+  "homepage": "https://github.com/monrars1995/oauth-hub-zdg",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/pedroherpeto/oauth-hub-zdg.git"
+    "url": "git+https://github.com/monrars1995/oauth-hub-zdg.git"
   },
   "bugs": {
-    "url": "https://github.com/pedroherpeto/oauth-hub-zdg/issues"
+    "url": "https://github.com/monrars1995/oauth-hub-zdg/issues"
   },
   "main": "dist/index.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "typecheck": "tsc --noEmit",
     "build": "tsc",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "test": "npm run build && node --test --test-concurrency=1 test/*.test.js"
   },
   "engines": {
     "node": ">=18"
   },
   "dependencies": {
-    "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "express-rate-limit": "^7.4.0"
   },
   "devDependencies": {
-    "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
     "@types/node": "^20.14.0",
     "ts-node-dev": "^2.0.0",

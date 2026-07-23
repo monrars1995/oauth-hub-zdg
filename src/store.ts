@@ -22,22 +22,139 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import fs from "fs";
 import path from "path";
+import crypto from "crypto";
 import { Channel, MetaApp, WebhookEvent } from "./types";
 
 export const DATA_DIR = path.join(__dirname, "..", "data");
+const ENCRYPTED_PREFIX = "enc:v1:";
+const DATA_KEY_FILE = ".data-encryption-key";
+let dataKeyCache: Buffer | null = null;
 
 function ensureDir(): void {
-  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true, mode: 0o700 });
+  try { fs.chmodSync(DATA_DIR, 0o700); } catch { /* best effort on non-POSIX filesystems */ }
+}
+
+function envSecret(name: string): string {
+  return (process.env[name] || "").trim();
+}
+
+function dataKey(forWrite: boolean): Buffer {
+  if (dataKeyCache) return dataKeyCache;
+  const configured = envSecret("DATA_ENCRYPTION_KEY");
+  if (configured) {
+    dataKeyCache = /^[a-f0-9]{64}$/i.test(configured)
+      ? Buffer.from(configured, "hex")
+      : crypto.createHash("sha256").update(configured, "utf8").digest();
+    return dataKeyCache;
+  }
+  ensureDir();
+  const keyPath = path.join(DATA_DIR, DATA_KEY_FILE);
+  if (fs.existsSync(keyPath)) {
+    const saved = fs.readFileSync(keyPath, "utf8").trim();
+    if (!/^[a-f0-9]{64}$/i.test(saved)) throw new Error("invalid persisted data-encryption key");
+    dataKeyCache = Buffer.from(saved, "hex");
+    return dataKeyCache;
+  }
+  if (!forWrite) throw new Error("data-encryption key is unavailable");
+  dataKeyCache = crypto.randomBytes(32);
+  fs.writeFileSync(keyPath, dataKeyCache.toString("hex"), { encoding: "utf8", mode: 0o600 });
+  try { fs.chmodSync(keyPath, 0o600); } catch { /* best effort on non-POSIX filesystems */ }
+  console.warn("[store] DATA_ENCRYPTION_KEY not set — generated data/.data-encryption-key for local use.");
+  return dataKeyCache;
+}
+
+function encryptSecret(value: string): string {
+  if (!value || value.startsWith(ENCRYPTED_PREFIX)) return value;
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv("aes-256-gcm", dataKey(true), iv);
+  const ciphertext = Buffer.concat([cipher.update(value, "utf8"), cipher.final()]);
+  const tag = cipher.getAuthTag();
+  return `${ENCRYPTED_PREFIX}${iv.toString("base64url")}:${tag.toString("base64url")}:${ciphertext.toString("base64url")}`;
+}
+
+function decryptSecret(value: string): string {
+  if (!value || !value.startsWith(ENCRYPTED_PREFIX)) return value;
+  const parts = value.split(":");
+  if (parts.length !== 5 || parts[0] !== "enc" || parts[1] !== "v1") throw new Error("invalid encrypted secret format");
+  try {
+    const decipher = crypto.createDecipheriv("aes-256-gcm", dataKey(false), Buffer.from(parts[2], "base64url"));
+    decipher.setAuthTag(Buffer.from(parts[3], "base64url"));
+    return Buffer.concat([decipher.update(Buffer.from(parts[4], "base64url")), decipher.final()]).toString("utf8");
+  } catch {
+    throw new Error("could not decrypt stored secret; check DATA_ENCRYPTION_KEY");
+  }
+}
+
+const APP_SECRET_FIELDS: Array<keyof MetaApp> = ["appSecret", "instagramAppSecret", "messengerFallbackToken", "webhookVerifyToken"];
+
+function transformSecrets(file: string, data: unknown, encrypt: boolean): unknown {
+  const transform = encrypt ? encryptSecret : decryptSecret;
+  if (file === "apps.json" && Array.isArray(data)) {
+    return data.map((raw) => {
+      const app = { ...(raw as MetaApp) } as MetaApp;
+      for (const field of APP_SECRET_FIELDS) {
+        const value = app[field];
+        if (typeof value === "string") (app as any)[field] = transform(value);
+      }
+      app.forwards = (app.forwards || []).map((forward) => ({ ...forward, url: transform(forward.url) }));
+      return app;
+    });
+  }
+  if (file === "channels.json" && Array.isArray(data)) {
+    return data.map((raw) => {
+      const channel = { ...(raw as Channel) };
+      if (typeof channel.accessToken === "string") channel.accessToken = transform(channel.accessToken);
+      return channel;
+    });
+  }
+  if (file === "events.json" && Array.isArray(data)) {
+    return data.map((raw) => {
+      const event = { ...(raw as WebhookEvent) };
+      event.forwards = (event.forwards || []).map((forward) => ({ ...forward, url: transform(forward.url) }));
+      return event;
+    });
+  }
+  return data;
+}
+
+function containsLegacyPlaintext(file: string, data: unknown): boolean {
+  if (file === "apps.json" && Array.isArray(data)) {
+    return data.some((raw) => {
+      const app = raw as any;
+      const plainSecret = APP_SECRET_FIELDS.some((field) => {
+        const value = app[field];
+        return typeof value === "string" && !!value && !value.startsWith(ENCRYPTED_PREFIX);
+      });
+      const plainForward = Array.isArray(app.forwards) && app.forwards.some(
+        (forward: any) => typeof forward?.url === "string" && !!forward.url && !forward.url.startsWith(ENCRYPTED_PREFIX)
+      );
+      return plainSecret || plainForward;
+    });
+  }
+  if (file === "channels.json" && Array.isArray(data)) {
+    return data.some((raw) => typeof (raw as any).accessToken === "string" && !!(raw as any).accessToken && !(raw as any).accessToken.startsWith(ENCRYPTED_PREFIX));
+  }
+  if (file === "events.json" && Array.isArray(data)) {
+    return data.some((raw) => Array.isArray((raw as any).forwards) && (raw as any).forwards.some(
+      (forward: any) => typeof forward?.url === "string" && !!forward.url && !forward.url.startsWith(ENCRYPTED_PREFIX)
+    ));
+  }
+  return false;
 }
 
 function readJson<T>(file: string, fallback: T): T {
+  const full = path.join(DATA_DIR, file);
+  if (!fs.existsSync(full)) return fallback;
   try {
-    const full = path.join(DATA_DIR, file);
-    if (!fs.existsSync(full)) return fallback;
-    return JSON.parse(fs.readFileSync(full, "utf-8")) as T;
+    const stored = JSON.parse(fs.readFileSync(full, "utf-8"));
+    const needsMigration = containsLegacyPlaintext(file, stored);
+    const decoded = transformSecrets(file, stored, false) as T;
+    if (needsMigration) queueMicrotask(() => writeJson(file, decoded, 0));
+    return decoded;
   } catch (err) {
-    console.error(`[store] could not read ${file}:`, err);
-    return fallback;
+    console.error(`[store] could not safely read ${file}:`, err instanceof Error ? err.message : "unknown error");
+    throw new Error(`[store] refusing startup because ${file} could not be read safely`);
   }
 }
 
@@ -49,8 +166,11 @@ function writeJson(file: string, data: unknown, debounceMs = 300): void {
       ensureDir();
       const full = path.join(DATA_DIR, file);
       const tmp = full + ".tmp";
-      fs.writeFileSync(tmp, JSON.stringify(data, null, 2), "utf-8");
+      const persisted = transformSecrets(file, data, true);
+      fs.writeFileSync(tmp, JSON.stringify(persisted, null, 2), { encoding: "utf-8", mode: 0o600 });
+      try { fs.chmodSync(tmp, 0o600); } catch { /* best effort on non-POSIX filesystems */ }
       fs.renameSync(tmp, full);
+      try { fs.chmodSync(full, 0o600); } catch { /* best effort on non-POSIX filesystems */ }
     } catch (err) {
       console.error(`[store] could not write ${file}:`, err);
     }
@@ -97,7 +217,11 @@ export function deleteApp(id: string): boolean {
   const idx = apps.findIndex((a) => a.id === id);
   if (idx < 0) return false;
   apps.splice(idx, 1);
+  channels = channels.filter((channel) => channel.appId !== id);
+  events = events.filter((event) => event.appId !== id);
   writeJson("apps.json", apps, 0);
+  writeJson("channels.json", channels, 0);
+  writeJson("events.json", events, 0);
   return true;
 }
 
@@ -108,8 +232,11 @@ let channels: Channel[] = readJson<Channel[]>("channels.json", []);
 export function listChannels(): Channel[] {
   return channels;
 }
-export function findChannelByExternalId(externalId: string): Channel | undefined {
-  return channels.find((c) => c.externalId === externalId);
+export function findChannelByExternalId(externalId: string, appId?: string): Channel | undefined {
+  return channels.find((c) => c.externalId === externalId && (!appId || c.appId === appId));
+}
+export function findChannelsByExternalId(externalId: string): Channel[] {
+  return channels.filter((c) => c.externalId === externalId);
 }
 export function findChannelById(id: string): Channel | undefined {
   return channels.find((c) => c.id === id);
@@ -118,14 +245,14 @@ export function countChannelsByApp(appId: string): number {
   return channels.filter((c) => c.appId === appId).length;
 }
 export function upsertChannel(ch: Channel): Channel {
-  const idx = channels.findIndex((c) => c.externalId === ch.externalId && c.type === ch.type);
+  const idx = channels.findIndex((c) => c.appId === ch.appId && c.externalId === ch.externalId && c.type === ch.type);
   if (idx >= 0) {
     channels[idx] = { ...channels[idx], ...ch, id: channels[idx].id, createdAt: channels[idx].createdAt };
   } else {
     channels.push(ch);
   }
   writeJson("channels.json", channels);
-  return channels.find((c) => c.externalId === ch.externalId && c.type === ch.type)!;
+  return channels.find((c) => c.appId === ch.appId && c.externalId === ch.externalId && c.type === ch.type)!;
 }
 export function deleteChannel(id: string): Channel | undefined {
   const idx = channels.findIndex((c) => c.id === id);
@@ -134,8 +261,8 @@ export function deleteChannel(id: string): Channel | undefined {
   writeJson("channels.json", channels);
   return removed;
 }
-export function touchChannelEvent(externalId: string): Channel | undefined {
-  const ch = findChannelByExternalId(externalId);
+export function touchChannelEvent(externalId: string, appId?: string): Channel | undefined {
+  const ch = findChannelByExternalId(externalId, appId);
   if (ch) {
     ch.lastEventAt = new Date().toISOString();
     writeJson("channels.json", channels);

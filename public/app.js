@@ -2,8 +2,6 @@
 (function () {
   "use strict";
 
-  var TOKEN_KEY = "hub_token";
-  var token = localStorage.getItem(TOKEN_KEY) || "";
   var lastEventTs = "";
   var eventsTimer = null;
   var appsCache = [];
@@ -13,8 +11,7 @@
   var soundOn = false;
   try { soundOn = localStorage.getItem("hub_sound") === "1"; } catch (e) {}
 
-  var YT_URL = "https://www.youtube.com/channel/UCrPbAoQKz42Gm0mLdWatAEA";
-  var ZP_URL = "https://zpro.zdg.com.br/";
+  var BRAND_URL = "https://goldneuron.io/";
   var TABS = ["overview", "events", "channels", "apps", "config", "guide", "evidence"];
 
   function $(id) { return document.getElementById(id); }
@@ -54,8 +51,7 @@
     trash: '<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
     plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
     arrowRight: '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
-    chevron: '<path d="m6 9 6 6 6-6"/>',
-    youtube: '<path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17"/><path d="m10 15 5-3-5-3z"/>'
+    chevron: '<path d="m6 9 6 6 6-6"/>'
   };
   function icon(name) { return '<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (ICONS[name] || "") + "</svg>"; }
 
@@ -173,12 +169,12 @@
 
   // ── i18n glue ──────────────────────────────────────────────
   function applyPromo() {
-    var community = t("brand.community");
-    var ytLink = '<a href="' + YT_URL + '" target="_blank" rel="noopener"><b>' + esc(community) + "</b></a>";
-    var ytPlain = '<a href="' + YT_URL + '" target="_blank" rel="noopener">' + esc(community) + "</a>";
-    var lf = $("loginFoot"); if (lf) lf.innerHTML = t("login.tool", { zdg: ytLink });
-    var ad = $("aboutDesc"); if (ad) ad.innerHTML = t("config.aboutDesc", { zdg: ytLink });
-    var fo = $("footerOffered"); if (fo) fo.innerHTML = t("footer.offered", { zdg: ytPlain });
+    var brand = t("brand.community");
+    var brandLink = '<a href="' + BRAND_URL + '" target="_blank" rel="noopener"><b>' + esc(brand) + "</b></a>";
+    var brandPlain = '<a href="' + BRAND_URL + '" target="_blank" rel="noopener">' + esc(brand) + "</a>";
+    var lf = $("loginFoot"); if (lf) lf.innerHTML = t("login.tool", { brand: brandLink });
+    var ad = $("aboutDesc"); if (ad) ad.innerHTML = t("config.aboutDesc", { brand: brandLink });
+    var fo = $("footerOffered"); if (fo) fo.innerHTML = t("footer.offered", { brand: brandPlain });
   }
   function buildLangSwitcher() {
     var btn = $("langDDBtn"), cur = $("langDDCur"), menu = $("langDDMenu");
@@ -196,48 +192,6 @@
   }
   function toggleLangMenu() { var dd = $("langDD"); if (!dd) return; var open = dd.classList.toggle("open"); $("langDDBtn").setAttribute("aria-expanded", open ? "true" : "false"); }
   function closeLangMenu() { var dd = $("langDD"); if (dd && dd.classList.contains("open")) { dd.classList.remove("open"); $("langDDBtn").setAttribute("aria-expanded", "false"); } }
-
-  // ── Video lightbox (guide tutorials) ───────────────────────
-  function ytIdFromHref(href) { var m = (href || "").match(/(?:youtu\.be\/|[?&]v=|embed\/)([A-Za-z0-9_-]{6,})/); return m ? m[1] : ""; }
-  function vlKeydown(e) { if (e.key === "Escape") closeVideoLightbox(); }
-  function closeVideoLightbox() { var ov = $("videoLightbox"); if (ov) { ov.parentNode.removeChild(ov); document.body.style.overflow = ""; document.removeEventListener("keydown", vlKeydown); } }
-  function openVideoLightbox(id) {
-    closeVideoLightbox();
-    var ov = document.createElement("div");
-    ov.className = "video-lightbox"; ov.id = "videoLightbox";
-    ov.innerHTML =
-      '<div class="vl-inner">' +
-        '<button class="vl-close" type="button" aria-label="' + escAttr(t("form.close")) + '">' + icon("x") + "</button>" +
-        '<div class="vl-frame"><iframe src="https://www.youtube.com/embed/' + encodeURIComponent(id) +
-          '?autoplay=1&rel=0&playsinline=1&modestbranding=1" title="" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>' +
-        '<a class="vl-yt" href="https://youtu.be/' + encodeURIComponent(id) + '" target="_blank" rel="noopener">' + esc(t("video.watchYoutube")) + "</a>" +
-      "</div>";
-    document.body.appendChild(ov);
-    document.body.style.overflow = "hidden";
-    requestAnimationFrame(function () { ov.classList.add("open"); });
-    ov.addEventListener("mousedown", function (e) { if (e.target === ov) closeVideoLightbox(); });
-    ov.querySelector(".vl-close").addEventListener("click", closeVideoLightbox);
-    document.addEventListener("keydown", vlKeydown);
-  }
-  function initVideoLightbox() {
-    document.addEventListener("click", function (e) {
-      var a = e.target.closest ? e.target.closest(".video-list a[href]") : null; if (!a) return;
-      var id = ytIdFromHref(a.getAttribute("href")); if (!id) return;
-      e.preventDefault(); openVideoLightbox(id);
-    });
-  }
-  var YT_THUMB_Q = ["maxresdefault", "hqdefault", "mqdefault", "sddefault", "default"];
-  function ytThumbFallback(img) {
-    var m = (img.src || "").match(/\/vi\/([^/]+)\/(\w+)\.jpg/);
-    if (m) { var id = m[1], idx = YT_THUMB_Q.indexOf(m[2]); if (idx >= 0 && idx < YT_THUMB_Q.length - 1) { img.src = "https://img.youtube.com/vi/" + id + "/" + YT_THUMB_Q[idx + 1] + ".jpg"; return; } }
-    img.onerror = null; img.style.display = "none"; if (img.parentNode) img.parentNode.classList.add("vthumb-empty");
-  }
-  function initVideoThumbs() {
-    Array.prototype.forEach.call(document.querySelectorAll(".video-list img.vthumb"), function (img) {
-      img.addEventListener("error", function () { ytThumbFallback(img); });
-      if (img.complete && img.naturalWidth === 0) ytThumbFallback(img);
-    });
-  }
 
   function currentTab() { var a = document.querySelector("[data-tab].active"); return a ? a.getAttribute("data-tab") : "overview"; }
   function setPageTitle() { var el = $("pageTitle"); if (el) el.textContent = t("nav." + currentTab()); }
@@ -340,11 +294,10 @@
     if (hasApp && hasVerify && hasChannel) {
       box.innerHTML =
         '<div class="panel-eyebrow">' + icon("sparkles") + "<span>" + esc(t("overview.promoEyebrow")) + "</span></div>" +
-        '<a href="' + ZP_URL + '" target="_blank" rel="noopener" aria-label="Z-PRO"><img class="zpro-logo-light" src="/assets/zpro-logo.png" alt="Z-PRO" style="margin:.2rem 0 .85rem" /></a>' +
+        '<a href="' + BRAND_URL + '" target="_blank" rel="noopener" aria-label="@goldneuron.io"><img class="brand-mark" src="/assets/goldneuron_logo_mark.svg" alt="@goldneuron.io" /></a>' +
         '<p style="font-size:.85rem;color:var(--muted);line-height:1.55;margin-bottom:1rem">' + t("config.aboutP") + "</p>" +
         '<div class="side-cta">' +
-          '<a class="btn yt" href="' + YT_URL + '?sub_confirmation=1" target="_blank" rel="noopener">' + icon("youtube") + "<span>" + esc(t("welcome.subscribe")) + "</span></a>" +
-          '<a class="btn secondary" href="' + ZP_URL + '" target="_blank" rel="noopener">' + esc(t("hero.knowZpro")) + "</a>" +
+          '<a class="btn" href="' + BRAND_URL + '" target="_blank" rel="noopener">' + esc(t("hero.knowZpro")) + "</a>" +
         "</div>";
       return;
     }
@@ -368,10 +321,10 @@
   // ── API ────────────────────────────────────────────────────
   function api(path, opts) {
     opts = opts || {}; opts.headers = opts.headers || {};
+    opts.credentials = "same-origin";
     if (opts.body && typeof opts.body !== "string") { opts.headers["Content-Type"] = "application/json"; opts.body = JSON.stringify(opts.body); }
-    if (token) opts.headers["Authorization"] = "Bearer " + token;
     return fetch(path, opts).then(function (r) {
-      if (r.status === 401) { doLogout(); throw new Error(t("login.expired")); }
+      if (r.status === 401 && path !== "/api/login") { sessionExpired(); throw new Error(t("login.expired")); }
       return r.json().then(function (data) { if (!r.ok) throw new Error(translateErr(data)); return data; });
     });
   }
@@ -388,12 +341,13 @@
   function proceedEntry() {
     if (!adminAuthEnabled) {
       api("/api/login", { method: "POST", body: { password: "" } })
-        .then(function (res) { token = res.token; localStorage.setItem(TOKEN_KEY, token); enterApp(); })
+        .then(function () { enterApp(); })
         .catch(function () { show($("login")); });
-    } else if (token) {
-      enterApp();
     } else {
-      show($("login")); var p = $("loginPass"); if (p) p.focus();
+      fetch("/api/config", { credentials: "same-origin" }).then(function (r) {
+        if (r.ok) enterApp();
+        else { show($("login")); var p = $("loginPass"); if (p) p.focus(); }
+      }).catch(function () { show($("login")); });
     }
   }
   function bootstrap() {
@@ -406,15 +360,19 @@
   function doLogin() {
     $("loginErr").textContent = ""; $("loginBtn").disabled = true;
     api("/api/login", { method: "POST", body: { password: $("loginPass").value } })
-      .then(function (res) { token = res.token; localStorage.setItem(TOKEN_KEY, token); hide($("login")); enterApp(); })
+      .then(function () { hide($("login")); enterApp(); })
       .catch(function (e) { $("loginErr").textContent = e.message || t("login.invalid"); })
       .then(function () { $("loginBtn").disabled = false; });
   }
-  function doLogout() {
-    token = ""; localStorage.removeItem(TOKEN_KEY);
+  function sessionExpired() {
     if (eventsTimer) { clearInterval(eventsTimer); eventsTimer = null; }
     hide($("app")); hide($("login")); var p = $("loginPass"); if (p) p.value = "";
     showWelcome(proceedEntry);
+  }
+  function doLogout() {
+    fetch("/api/logout", { method: "POST", credentials: "same-origin" })
+      .catch(function () {})
+      .then(sessionExpired);
   }
   function enterApp() { hide($("login")); show($("app")); loadConfig(); startEvents(); activateTab("overview"); }
 
@@ -470,7 +428,7 @@
   function embedSnippet(appId, channel) {
     var url = embedUrl(appId, channel);
     return '<a href="' + url + '" target="_blank" rel="noopener" ' +
-      "onclick=\"window.open(this.href,'zdg_connect','width=560,height=740');return false;\" " +
+      "onclick=\"window.open(this.href,'goldneuron_connect','width=560,height=740');return false;\" " +
       'style="display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border-radius:10px;background:' + CH_COLOR[channel] +
       ';color:#fff;font:600 14px/1 -apple-system,Segoe UI,Roboto,sans-serif;text-decoration:none;">' +
       '<img src="' + publicUrl + CH_IMG[channel] + '" alt="" style="width:18px;height:18px;border-radius:4px" /> ' + t("embed." + channel) + "</a>";
@@ -1079,6 +1037,17 @@
     if (body.source === "channel") body.channelId = $("evChannel").value;
     if (body.source === "paste") body.token = $("evToken").value.trim();
     if (!body.appId) { toast(t("evidence.pickApp"), true); return; }
+    if (body.allowWrites) {
+      confirmModal(t("evidence.confirmWrites"), t("evidence.run"), true).then(function (confirmed) {
+        if (!confirmed) return;
+        body.writeConfirmation = "CONFIRM_WRITES";
+        evSubmit(body);
+      });
+      return;
+    }
+    evSubmit(body);
+  }
+  function evSubmit(body) {
     $("evRun").disabled = true; $("evSummary").textContent = t("common.loading"); $("evResults").innerHTML = ""; $("evDownload").style.display = "none";
     api("/api/evidence/run", { method: "POST", body: body }).then(function (d) {
       EV.lastDoc = d.doc || ""; EV.lastFile = d.filename || "evidencia.txt";
@@ -1108,7 +1077,7 @@
   var resizeTimer = null;
   document.addEventListener("DOMContentLoaded", function () {
     if (window.I18N) window.I18N.applyI18n(document);
-    buildLangSwitcher(); initVideoLightbox(); initVideoThumbs();
+    buildLangSwitcher();
     document.addEventListener("click", function (e) {
       var dd = $("langDD");
       if (dd && dd.classList.contains("open") && (!e.target.closest || !e.target.closest("#langDD"))) closeLangMenu();
@@ -1141,7 +1110,7 @@
     document.addEventListener("click", function (e) {
       if (!e.target.closest) return;
       var tb = e.target.closest("[data-embed-test]");
-      if (tb) { var w = window.open(tb.getAttribute("data-embed-test"), "zdg_connect", "width=560,height=740"); if (!w) toast(t("embed.popupBlocked"), true); return; }
+      if (tb) { var w = window.open(tb.getAttribute("data-embed-test"), "goldneuron_connect", "width=560,height=740"); if (!w) toast(t("embed.popupBlocked"), true); return; }
       var b = e.target.closest("[data-copy-text]");
       if (b) navigator.clipboard.writeText(b.getAttribute("data-copy-text")).then(function () { toast(t("toast.copied")); }, function () { toast(t("toast.copyFail"), true); });
     });

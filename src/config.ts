@@ -31,27 +31,41 @@ function env(name: string): string {
   return (process.env[name] || "").trim();
 }
 
+export const NODE_ENV = env("NODE_ENV") || "development";
+export const IS_PRODUCTION = NODE_ENV === "production";
 export const PORT = Number(env("PORT")) || 3300;
 export const PUBLIC_URL = (env("PUBLIC_URL") || `http://localhost:${PORT}`).replace(/\/$/, "");
 export const ADMIN_PASSWORD = env("ADMIN_PASSWORD");
 export const WEBHOOK_DEBUG_LOG = /^(1|true|yes|on)$/i.test(env("WEBHOOK_DEBUG_LOG"));
-export const DEFAULT_API_VERSION = env("META_API_VERSION") || "v23.0";
+export const DEFAULT_API_VERSION = env("META_API_VERSION") || "v25.0";
 export const FORWARD_TIMEOUT_MS = Math.max(2000, Number(env("FORWARD_TIMEOUT_MS")) || 10000);
+export const ALLOW_INSECURE_FORWARD_URLS = /^(1|true|yes|on)$/i.test(env("ALLOW_INSECURE_FORWARD_URLS"));
+export const FORWARD_ALLOWED_HOSTS = env("FORWARD_ALLOWED_HOSTS")
+  .split(",")
+  .map((host) => host.trim().toLowerCase())
+  .filter(Boolean);
+export const CORS_ALLOWED_ORIGINS = env("CORS_ALLOWED_ORIGINS")
+  .split(",")
+  .map((origin) => origin.trim().replace(/\/$/, ""))
+  .filter(Boolean);
 
 // AGPL-3.0 §13: remote users must be able to obtain the Corresponding Source.
 // Shown as a "Source" link in the panel footer. Override via env if you fork.
-export const SOURCE_URL = (env("SOURCE_URL") || "https://github.com/pedroherpeto/oauth-hub-zdg").replace(/\/$/, "");
+export const SOURCE_URL = (env("SOURCE_URL") || "https://github.com/monrars1995/oauth-hub-zdg").replace(/\/$/, "");
 
+const SESSION_SECRET_FROM_ENV = env("SESSION_SECRET");
+const DATA_ENCRYPTION_KEY_FROM_ENV = env("DATA_ENCRYPTION_KEY");
 export const SESSION_SECRET = (() => {
-  const fromEnv = env("SESSION_SECRET");
-  if (fromEnv) return fromEnv;
+  if (SESSION_SECRET_FROM_ENV) return SESSION_SECRET_FROM_ENV;
   // No env secret: persist a generated one to disk so panel sessions and
   // in-flight OAuth states survive restarts (otherwise every restart yields a
   // new secret and breaks them → INVALID_STATE mid-connect).
   try {
-    if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+    if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true, mode: 0o700 });
+    try { fs.chmodSync(DATA_DIR, 0o700); } catch { /* best effort on non-POSIX filesystems */ }
     const file = path.join(DATA_DIR, ".session-secret");
     if (fs.existsSync(file)) {
+      try { fs.chmodSync(file, 0o600); } catch { /* best effort on non-POSIX filesystems */ }
       const saved = fs.readFileSync(file, "utf-8").trim();
       if (saved) return saved;
     }
@@ -73,7 +87,31 @@ export const SESSION_SECRET = (() => {
 })();
 
 export function getBrand(): string {
-  return getSettings().brandName || env("BRAND_NAME") || "Hub Meta Apps";
+  return getSettings().brandName || env("BRAND_NAME") || "Meta AppHub";
+}
+
+export function isAllowedBrowserOrigin(origin: string): boolean {
+  try {
+    const normalized = new URL(origin).origin;
+    const ownOrigin = new URL(PUBLIC_URL).origin;
+    return normalized === ownOrigin || CORS_ALLOWED_ORIGINS.includes(normalized);
+  } catch {
+    return false;
+  }
+}
+
+export function assertProductionConfig(): void {
+  if (!IS_PRODUCTION) return;
+  const errors: string[] = [];
+  if (ADMIN_PASSWORD.length < 12) errors.push("ADMIN_PASSWORD must contain at least 12 characters");
+  if (SESSION_SECRET_FROM_ENV.length < 32) errors.push("SESSION_SECRET must contain at least 32 characters");
+  if (DATA_ENCRYPTION_KEY_FROM_ENV.length < 32) errors.push("DATA_ENCRYPTION_KEY must contain at least 32 characters");
+  try {
+    if (new URL(PUBLIC_URL).protocol !== "https:") errors.push("PUBLIC_URL must use HTTPS");
+  } catch {
+    errors.push("PUBLIC_URL must be a valid HTTPS URL");
+  }
+  if (errors.length) throw new Error(`[config] Refusing insecure production startup: ${errors.join("; ")}`);
 }
 
 // ─── Per-app derived values ────────────────────────────────────────────────────

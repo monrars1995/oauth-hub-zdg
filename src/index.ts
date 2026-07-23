@@ -24,7 +24,6 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import "dotenv/config";
 import express, { Request, Response } from "express";
-import cors from "cors";
 import rateLimit from "express-rate-limit";
 import fs from "fs";
 import path from "path";
@@ -43,6 +42,8 @@ import {
   appWebhookUrls,
   appRedirectUri,
   seedAppFromEnvIfEmpty,
+  assertProductionConfig,
+  isAllowedBrowserOrigin,
 } from "./config";
 import {
   requireAdmin,
@@ -50,6 +51,9 @@ import {
   passwordMatches,
   encodeState,
   decodeState,
+  consumeState,
+  setSessionCookie,
+  clearSessionCookie,
   verifyWebhookSignature,
   newId,
 } from "./security";
@@ -59,6 +63,7 @@ import * as evidence from "./evidence";
 import { tServer, localesScript, normalizeLang, reloadLocales } from "./i18n";
 import { parseWebhook } from "./webhook-parse";
 import { Channel, ChannelPublic, ChannelType, ForwardDest, ForwardProduct, MetaApp, WebhookEvent } from "./types";
+import { postSafeForwardUrl, UnsafeForwardUrlError, validateForwardUrl } from "./forward-security";
 
 const app = express();
 
@@ -72,7 +77,30 @@ app.use(
 );
 app.use(express.urlencoded({ extended: true }));
 app.set("trust proxy", 1);
-app.use(cors());
+app.disable("x-powered-by");
+app.use((req: Request, res: Response, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("Referrer-Policy", "same-origin");
+  res.setHeader("X-Frame-Options", "SAMEORIGIN");
+  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  const origin = req.headers.origin;
+  if (origin && !isAllowedBrowserOrigin(origin)) {
+    res.status(403).json({ error: "ORIGIN_NOT_ALLOWED" });
+    return;
+  }
+  if (origin) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+    res.setHeader("Vary", "Origin");
+  }
+  if (req.method === "OPTIONS") {
+    res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization");
+    res.sendStatus(204);
+    return;
+  }
+  next();
+});
 
 const loginLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 30, standardHeaders: true, legacyHeaders: false });
 const apiLimiter = rateLimit({ windowMs: 60 * 1000, max: 300, standardHeaders: true, legacyHeaders: false });
@@ -115,7 +143,7 @@ function renderResultPage(res: Response, ok: boolean, lang: string, titleKey: st
   res.setHeader("Content-Type", "text/html; charset=utf-8");
   res.send(`<!DOCTYPE html><html lang="${L}"><head><meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>${htmlEscape(title)} · ZDG</title>
+<title>${htmlEscape(title)} · @goldneuron.io</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
@@ -138,7 +166,7 @@ function renderResultPage(res: Response, ok: boolean, lang: string, titleKey: st
   <a class="back" href="/">${htmlEscape(back)}</a>
 </div>
 <div class="promo-foot">
-  <a href="https://www.youtube.com/channel/UCrPbAoQKz42Gm0mLdWatAEA" target="_blank" rel="noopener">${htmlEscape(footer)}</a> · <a href="https://zpro.zdg.com.br/" target="_blank" rel="noopener">${htmlEscape(knowZpro)}</a>
+  <a href="https://goldneuron.io/" target="_blank" rel="noopener">${htmlEscape(footer)}</a> · <a href="https://neuros.codes/" target="_blank" rel="noopener">${htmlEscape(knowZpro)}</a>
 </div>
 <script>
   try { if (window.opener) { window.opener.postMessage({ type: 'hub:connected', ok: ${ok ? "true" : "false"} }, window.location.origin); setTimeout(function(){ window.close(); }, 2500); } } catch(e){}
@@ -152,8 +180,7 @@ function sanitizeForwards(input: any): ForwardDest[] {
   const out: ForwardDest[] = [];
   for (const f of input) {
     if (!f || typeof f.url !== "string") continue;
-    const url = f.url.trim();
-    if (!/^https?:\/\//i.test(url)) continue;
+    const url = validateForwardUrl(f.url.trim()).toString();
     let products: ForwardProduct[] = Array.isArray(f.products)
       ? f.products.filter((p: any) => valid.includes(p))
       : ["all"];
@@ -177,9 +204,14 @@ app.get("/api/bootstrap", apiLimiter, (_req: Request, res: Response) => {
 
 app.post("/api/login", loginLimiter, (req: Request, res: Response) => {
   const { password } = req.body as { password?: string };
-  if (!ADMIN_PASSWORD) return res.json({ token: issueSession(), openMode: true });
-  if (!passwordMatches(password || "")) return res.status(401).json({ error: "INVALID_PASSWORD" });
-  return res.json({ token: issueSession(), openMode: false });
+  if (ADMIN_PASSWORD && !passwordMatches(password || "")) return res.status(401).json({ error: "INVALID_PASSWORD" });
+  setSessionCookie(res, issueSession());
+  return res.json({ ok: true, openMode: !ADMIN_PASSWORD });
+});
+
+app.post("/api/logout", apiLimiter, (_req: Request, res: Response) => {
+  clearSessionCookie(res);
+  res.json({ ok: true });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -208,6 +240,13 @@ app.post("/api/apps", apiLimiter, requireAdmin, (req: Request, res: Response) =>
   const appId = typeof b.appId === "string" ? b.appId.trim() : "";
   if (!name) return res.status(400).json({ error: "NAME_REQUIRED" });
   if (!appId) return res.status(400).json({ error: "APP_ID_REQUIRED" });
+  let forwards: ForwardDest[];
+  try {
+    forwards = sanitizeForwards(b.forwards);
+  } catch (error) {
+    if (error instanceof UnsafeForwardUrlError) return res.status(400).json({ error: "UNSAFE_FORWARD_URL" });
+    throw error;
+  }
   const now = new Date().toISOString();
   const created: MetaApp = {
     id: newId().slice(0, 10),
@@ -221,7 +260,7 @@ app.post("/api/apps", apiLimiter, requireAdmin, (req: Request, res: Response) =>
     instagramAppSecret: typeof b.instagramAppSecret === "string" ? b.instagramAppSecret.trim() : "",
     messengerFallbackToken: typeof b.messengerFallbackToken === "string" ? b.messengerFallbackToken.trim() : "",
     webhookVerifyToken: typeof b.webhookVerifyToken === "string" ? b.webhookVerifyToken.trim() : "",
-    forwards: sanitizeForwards(b.forwards),
+    forwards,
     storeEvents: b.storeEvents !== false,
     embedEnabled: b.embedEnabled === true,
     createdAt: now,
@@ -248,7 +287,14 @@ app.put("/api/apps/:id", apiLimiter, requireAdmin, (req: Request, res: Response)
   if (typeof b.messengerFallbackToken === "string" && b.messengerFallbackToken.trim()) {
     patch.messengerFallbackToken = b.messengerFallbackToken.trim() === "__clear__" ? "" : b.messengerFallbackToken.trim();
   }
-  if (b.forwards !== undefined) patch.forwards = sanitizeForwards(b.forwards);
+  if (b.forwards !== undefined) {
+    try {
+      patch.forwards = sanitizeForwards(b.forwards);
+    } catch (error) {
+      if (error instanceof UnsafeForwardUrlError) return res.status(400).json({ error: "UNSAFE_FORWARD_URL" });
+      throw error;
+    }
+  }
   if (typeof b.storeEvents === "boolean") patch.storeEvents = b.storeEvents;
   if (typeof b.embedEnabled === "boolean") patch.embedEnabled = b.embedEnabled;
   const updated = store.updateApp(req.params.id, patch);
@@ -339,6 +385,11 @@ app.post("/api/evidence/run", apiLimiter, requireAdmin, async (req: Request, res
     return res.status(400).json({ error: "BAD_SOURCE" });
   }
 
+  const allowWrites = b.allowWrites === true;
+  if (allowWrites && b.writeConfirmation !== "CONFIRM_WRITES") {
+    return res.status(400).json({ error: "WRITE_CONFIRMATION_REQUIRED" });
+  }
+
   const missing = suite.needs.filter((n) => !({ waba_id, phone_number_id, ig_id, page_id } as any)[n]);
   if (missing.length) return res.status(400).json({ error: "MISSING_PARAMS", missing });
 
@@ -348,7 +399,6 @@ app.post("/api/evidence/run", apiLimiter, requireAdmin, async (req: Request, res
     waba_id, phone_number_id, ig_id, page_id,
     recipient: typeof params.recipient === "string" ? params.recipient.trim() : "",
   };
-  const allowWrites = b.allowWrites === true;
   if (allowWrites && !ctx.recipient && product === "whatsapp" && suite.steps.some((s) => s.write && /messages/.test(s.path))) {
     return res.status(400).json({ error: "RECIPIENT_REQUIRED" });
   }
@@ -419,8 +469,10 @@ app.post("/api/connect/:channel/init", apiLimiter, requireAdmin, (req: Request, 
 });
 
 // Resolve the app from a signed state (used by the signup pages/exchanges).
-function appFromState(stateRaw: string): { state: ReturnType<typeof decodeState>; app: MetaApp | undefined } {
-  const state = decodeState(stateRaw);
+function appFromState(stateRaw: string, expectedChannel: ChannelType, consume = false): { state: ReturnType<typeof decodeState>; app: MetaApp | undefined } {
+  const decoded = decodeState(stateRaw);
+  if (!decoded || decoded.channel !== expectedChannel) return { state: null, app: undefined };
+  const state = consume ? consumeState(stateRaw) : decoded;
   return { state, app: state ? store.findApp(state.appId) : undefined };
 }
 function langOf(req: Request, decoded?: ReturnType<typeof decodeState>): string {
@@ -428,7 +480,7 @@ function langOf(req: Request, decoded?: ReturnType<typeof decodeState>): string 
 }
 
 app.get("/connect/waba", (req: Request, res: Response) => {
-  const { state, app } = appFromState(String(req.query.state || ""));
+  const { state, app } = appFromState(String(req.query.state || ""), "waba");
   const lang = langOf(req, state);
   if (!state || !app) return renderResultPage(res, false, lang, "result.invalidSessionTitle", "result.invalidSessionMsg");
   serveTemplate(res, "connect-waba.html", {
@@ -442,7 +494,7 @@ app.get("/connect/waba", (req: Request, res: Response) => {
 });
 
 app.get("/connect/messenger", (req: Request, res: Response) => {
-  const { state, app } = appFromState(String(req.query.state || ""));
+  const { state, app } = appFromState(String(req.query.state || ""), "messenger");
   const lang = langOf(req, state);
   if (!state || !app) return renderResultPage(res, false, lang, "result.invalidSessionTitle", "result.invalidSessionMsg");
   serveTemplate(res, "connect-messenger.html", {
@@ -456,7 +508,7 @@ app.get("/connect/messenger", (req: Request, res: Response) => {
 });
 
 app.get("/connect/instagram", (req: Request, res: Response) => {
-  const { state, app } = appFromState(String(req.query.state || ""));
+  const { state, app } = appFromState(String(req.query.state || ""), "instagram");
   const lang = langOf(req, state);
   if (!state || !app) return renderResultPage(res, false, lang, "result.invalidSessionTitle", "result.invalidSessionMsg");
   const ig = instagramCredsFor(app);
@@ -474,7 +526,7 @@ app.get("/connect/instagram", (req: Request, res: Response) => {
 
 app.get("/connect/instagram/callback", async (req: Request, res: Response) => {
   const { code, state, error, error_description } = req.query as Record<string, string>;
-  const { state: decoded, app } = appFromState(String(state || ""));
+  const { state: decoded, app } = appFromState(String(state || ""), "instagram", true);
   const lang = langOf(req, decoded);
   if (error) return renderResultPage(res, false, lang, "result.authDeniedTitle", "result.authDeniedMsg", { detail: error_description || error });
   if (!decoded || !app) return renderResultPage(res, false, lang, "result.invalidSessionTitle", "result.stateMissingMsg");
@@ -536,7 +588,7 @@ app.get("/connect/instagram/callback", async (req: Request, res: Response) => {
 
 app.post("/api/connect/waba/exchange", apiLimiter, async (req: Request, res: Response) => {
   const { state, code, waba_id, phone_number_id } = req.body as Record<string, any>;
-  const { state: decoded, app } = appFromState(String(state || ""));
+  const { state: decoded, app } = appFromState(String(state || ""), "waba", true);
   if (!decoded || !app) return res.status(403).json({ error: "INVALID_STATE" });
   if (!code) return res.status(400).json({ error: "MISSING_CODE" });
   try {
@@ -599,7 +651,7 @@ app.post("/api/connect/waba/exchange", apiLimiter, async (req: Request, res: Res
 
 app.post("/api/connect/messenger/exchange", apiLimiter, async (req: Request, res: Response) => {
   const { state, code, userToken, redirectUri, configId } = req.body as Record<string, any>;
-  const { state: decoded, app } = appFromState(String(state || ""));
+  const { state: decoded, app } = appFromState(String(state || ""), "messenger", true);
   if (!decoded || !app) return res.status(403).json({ error: "INVALID_STATE" });
   try {
     let accessToken = "";
@@ -732,85 +784,90 @@ function relayToApp(appCfg: MetaApp, product: ChannelType | "unknown", rawBody: 
   if (eventId) store.updateEvent(eventId, { forwards: dests.map((d) => ({ url: d.url, ok: false, status: "pending" })) });
   for (const d of dests) {
     setImmediate(async () => {
-      const ctrl = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), FORWARD_TIMEOUT_MS);
       try {
         const headers: Record<string, string> = { "Content-Type": "application/json", "X-Hub-App": appCfg.id };
         if (sigHeader) headers["X-Hub-Signature-256"] = sigHeader;
-        const r = await fetch(d.url, { method: "POST", headers, body: rawBody || "{}", signal: ctrl.signal });
+        const r = await postSafeForwardUrl(d.url, rawBody || "{}", headers, FORWARD_TIMEOUT_MS);
         if (eventId) store.setEventForward(eventId, d.url, r.ok, r.status);
-        if (WEBHOOK_DEBUG_LOG) console.log(`[forward] app=${appCfg.id} → ${d.url} status=${r.status}`);
+        if (WEBHOOK_DEBUG_LOG) console.log(`[forward] app=${appCfg.id} status=${r.status}`);
       } catch (err: any) {
-        const status = err?.name === "AbortError" ? "timeout" : "error";
+        const status = err instanceof UnsafeForwardUrlError ? "blocked" : (err?.name === "AbortError" ? "timeout" : "error");
         if (eventId) store.setEventForward(eventId, d.url, false, status);
-        if (WEBHOOK_DEBUG_LOG) console.log(`[forward] app=${appCfg.id} → ${d.url} FAILED ${status}`);
-      } finally {
-        clearTimeout(timer);
+        if (WEBHOOK_DEBUG_LOG) console.log(`[forward] app=${appCfg.id} failed=${status}`);
       }
     });
   }
   return dests.length;
 }
 
-/** Core ingest: parse, verify signature, store event, forward. `appCfg` may be
- *  null on the generic endpoint (then we try to resolve it). */
-function ingest(appCfg: MetaApp | null, req: Request): void {
+function signatureMatchesApp(
+  appCfg: MetaApp,
+  product: ChannelType | "unknown",
+  rawBody: string | undefined,
+  signatureHeader: string | undefined
+): boolean {
+  if (verifyWebhookSignature(rawBody, signatureHeader, appCfg.appSecret) === true) return true;
+  return product === "instagram" && !!appCfg.instagramAppSecret &&
+    verifyWebhookSignature(rawBody, signatureHeader, appCfg.instagramAppSecret) === true;
+}
+
+/** Resolve an app only when its server-held secret validates the exact raw body. */
+function resolveSignedApp(
+  requestedApp: MetaApp | null,
+  product: ChannelType | "unknown",
+  externalId: string | null,
+  rawBody: string | undefined,
+  signatureHeader: string | undefined
+): MetaApp | null {
+  if (requestedApp) return signatureMatchesApp(requestedApp, product, rawBody, signatureHeader) ? requestedApp : null;
+  const allApps = store.listApps();
+  const linkedIds = externalId ? new Set(store.findChannelsByExternalId(externalId).map((channel) => channel.appId)) : new Set<string>();
+  const ordered = [...allApps.filter((candidate) => linkedIds.has(candidate.id)), ...allApps.filter((candidate) => !linkedIds.has(candidate.id))];
+  return ordered.find((candidate) => signatureMatchesApp(candidate, product, rawBody, signatureHeader)) || null;
+}
+
+/** Core ingest is fail-closed: unauthenticated payloads are never stored or relayed. */
+function ingest(appCfg: MetaApp | null, req: Request): number {
   const body = req.body;
   const rawBody = (req as any).rawBody as string | undefined;
   const sig = (req.headers["x-hub-signature-256"] as string) || undefined;
   const parsed = parseWebhook(body);
-
-  let resolved = appCfg;
+  const resolved = resolveSignedApp(appCfg, parsed.product, parsed.externalId, rawBody, sig);
   if (!resolved) {
-    const apps = store.listApps();
-    if (apps.length === 1) resolved = apps[0];
-    else if (parsed.externalId) {
-      const ch = store.findChannelByExternalId(parsed.externalId);
-      if (ch) resolved = store.findApp(ch.appId) || null;
-    }
+    if (WEBHOOK_DEBUG_LOG) console.warn(`[webhook] rejected product=${parsed.product} reason=invalid_signature`);
+    return 401;
   }
-
-  // Instagram Login webhooks are signed with the Instagram app secret (when the
-  // app uses a separate IG app); page-linked/other products use the main secret.
-  // Accept the event if EITHER secret validates.
-  let signatureValid: boolean | null = null;
-  if (resolved) {
-    signatureValid = verifyWebhookSignature(rawBody, sig, resolved.appSecret);
-    if (!signatureValid && parsed.product === "instagram" && resolved.instagramAppSecret) {
-      signatureValid = verifyWebhookSignature(rawBody, sig, resolved.instagramAppSecret);
-    }
-  }
-  const matched = parsed.externalId ? store.findChannelByExternalId(parsed.externalId) : undefined;
-  if (parsed.externalId) store.touchChannelEvent(parsed.externalId);
+  const matched = parsed.externalId ? store.findChannelByExternalId(parsed.externalId, resolved.id) : undefined;
+  if (parsed.externalId) store.touchChannelEvent(parsed.externalId, resolved.id);
 
   const ev: WebhookEvent = {
     id: newId(),
     ts: new Date().toISOString(),
-    appId: resolved?.id || null,
-    appName: resolved?.name || "(não identificado)",
+    appId: resolved.id,
+    appName: resolved.name,
     product: parsed.product,
     externalId: parsed.externalId,
     channelId: matched?.id || null,
     kind: parsed.kind,
     direction: "in",
     summary: parsed.summary,
-    signatureValid,
+    signatureValid: true,
     forwards: [],
     raw: body,
   };
   // storeEvents=false → relay-only ("transacional"): forward without keeping history.
-  // Unidentified apps (resolved=null) are always stored so nothing is silently dropped.
-  const keepHistory = !resolved || resolved.storeEvents !== false;
+  const keepHistory = resolved.storeEvents !== false;
   if (keepHistory) {
     store.addEvent(ev);
-    if (resolved) relayToApp(resolved, parsed.product, rawBody, sig, ev.id);
-  } else if (resolved) {
+    relayToApp(resolved, parsed.product, rawBody, sig, ev.id);
+  } else {
     relayToApp(resolved, parsed.product, rawBody, sig, null);
   }
 
   if (WEBHOOK_DEBUG_LOG) {
-    console.log(`[webhook] app=${resolved?.id || "?"} product=${parsed.product} ext=${parsed.externalId} sig=${signatureValid} store=${keepHistory}`);
+    console.log(`[webhook] app=${resolved.id} product=${parsed.product} signature=valid store=${keepHistory}`);
   }
+  return 200;
 }
 
 // Per-app endpoints (primary).
@@ -834,16 +891,16 @@ app.get("/webhook/app/:appKey", webhookLimiter, (req, res) => verifyForApp(store
 app.get("/webhook/app/:appKey/:product", webhookLimiter, (req, res) => verifyForApp(store.findApp(req.params.appKey), req, res));
 app.post("/webhook/app/:appKey", webhookLimiter, (req, res) => {
   const appCfg = store.findApp(req.params.appKey);
-  res.sendStatus(appCfg ? 200 : 404);
-  if (appCfg) ingest(appCfg, req);
+  if (!appCfg) return res.sendStatus(404);
+  return res.sendStatus(ingest(appCfg, req));
 });
 app.post("/webhook/app/:appKey/:product", webhookLimiter, (req, res) => {
   const appCfg = store.findApp(req.params.appKey);
-  res.sendStatus(appCfg ? 200 : 404);
-  if (appCfg) ingest(appCfg, req);
+  if (!appCfg) return res.sendStatus(404);
+  return res.sendStatus(ingest(appCfg, req));
 });
 
-// Generic endpoint (fallback) — resolves the app by signature-less heuristics.
+// Generic endpoint (fallback) — resolves the app by a valid signature.
 function verifyGeneric(req: Request, res: Response): void {
   const mode = req.query["hub.mode"];
   const token = req.query["hub.verify_token"];
@@ -857,12 +914,10 @@ function verifyGeneric(req: Request, res: Response): void {
 app.get("/webhook", webhookLimiter, verifyGeneric);
 app.get("/webhook/:product", webhookLimiter, verifyGeneric);
 app.post("/webhook", webhookLimiter, (req, res) => {
-  res.sendStatus(200);
-  ingest(null, req);
+  res.sendStatus(ingest(null, req));
 });
 app.post("/webhook/:product", webhookLimiter, (req, res) => {
-  res.sendStatus(200);
-  ingest(null, req);
+  res.sendStatus(ingest(null, req));
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -884,10 +939,11 @@ app.use(express.static(path.join(__dirname, "..", "public")));
 app.get("/", (_req: Request, res: Response) => res.sendFile(path.join(__dirname, "..", "public", "index.html")));
 app.use("/api", (_req: Request, res: Response) => res.status(404).json({ error: "NOT_FOUND" }));
 
+assertProductionConfig();
 seedAppFromEnvIfEmpty(() => newId().slice(0, 10));
 
 app.listen(PORT, () => {
-  console.log(`\n  ${getBrand()} — oauth-hub (multi-app)`);
+  console.log(`\n  ${getBrand()} by @goldneuron.io — multi-app`);
   console.log(`  listening on :${PORT}`);
   console.log(`  public url:  ${PUBLIC_URL}`);
   console.log(`  admin auth:  ${ADMIN_PASSWORD ? "ON" : "OFF (open mode — set ADMIN_PASSWORD)"}`);

@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# oauth-hub — imagem Docker (multi-stage).
+# Meta AppHub by @goldneuron.io — imagem Docker (multi-stage).
 #   Stage 1 (builder): instala deps completas e compila TypeScript → dist/.
 #   Stage 2 (runtime): só deps de produção + dist/ + assets estáticos.
 # Dados persistentes ficam em /app/data — monte um volume para não perdê-los.
@@ -22,6 +22,9 @@ RUN npm run build
 FROM node:20-alpine AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
+LABEL org.opencontainers.image.title="Meta AppHub by @goldneuron.io" \
+      org.opencontainers.image.source="https://github.com/monrars1995/oauth-hub-zdg" \
+      org.opencontainers.image.licenses="AGPL-3.0-only"
 
 # Apenas dependências de produção.
 COPY package.json package-lock.json ./
@@ -32,10 +35,11 @@ RUN npm ci --omit=dev && npm cache clean --force
 COPY --from=builder /app/dist ./dist
 COPY public ./public
 COPY locales ./locales
+COPY --chmod=0444 LICENSE NOTICE.md ./
 
 # Diretório de dados persistentes (apps/canais/eventos/settings em JSON).
 # Criado com dono "node" para o processo não-root poder gravar no volume montado.
-RUN mkdir -p /app/data && chown -R node:node /app/data
+RUN mkdir -p /app/data && chown -R node:node /app/data && chmod 700 /app/data
 VOLUME ["/app/data"]
 
 # Porta HTTP interna (a porta exposta no host pode ser remapeada no compose/run).

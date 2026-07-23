@@ -1,10 +1,10 @@
-# Hub Meta Apps — oauth-hub-zdg
+# Meta AppHub — by @goldneuron.io
 
 Hub **standalone**, **multi-app** e **whitelabel** para conectar canais da **Meta** — WhatsApp Business (Cloud API / Embedded Signup), **Messenger** (Páginas) e **Instagram** (Instagram Login) — **receber + visualizar** as interações (webhooks) e **rotear (encaminhar)** esses webhooks, por app, para outros sistemas.
 
 Não valida licença e não depende de nenhum backend externo. Guarda os apps, canais e interações localmente (arquivos JSON) e mostra tudo num painel. Ideal para demonstrar o fluxo OAuth + recebimento de webhooks (por exemplo, no vídeo de revisão do app na Meta) e para servir de hub de integração simples.
 
-> Projeto gratuito da **Comunidade ZDG** · conheça o **[Z-PRO — Multiatendimento](https://zpro.zdg.com.br/)**.
+> Fork operacional mantido pela **[@goldneuron.io](https://goldneuron.io/)** com identidade NeurOS.
 
 ---
 
@@ -19,8 +19,8 @@ Não valida licença e não depende de nenhum backend externo. Guarda os apps, c
 - **Roteamento / encaminhamento** — cada app pode repassar seus webhooks para uma ou mais URLs (“outros pontos”), com filtro por produto. POST com o corpo original + cabeçalho `X-Hub-App` (e `X-Hub-Signature-256`, quando houver).
 - **Modo histórico × transacional** — por app, escolha **salvar histórico** no painel ou apenas **encaminhar** (ponta a ponta) sem guardar nada.
 - **Botões de embed** — gere um botão de conexão para colar **fora do painel** (em qualquer site), por app/canal.
-- **Segurança** — App Secret só no servidor; tokens de canal nunca vão ao navegador; webhooks verificados por `X-Hub-Signature-256`; painel protegido por senha (opcional).
-- **Painel "Mission Control"** — **visão geral** (KPIs + gráfico de atividade da última hora + mix de canais), **console ao vivo** das interações (filtros, busca, payload com realce de sintaxe, som opcional), **canais como health cards** (status do webhook + sparkline), **command palette** (`Ctrl`/`⌘`+`K`), **tema claro/escuro**, layout **responsivo (mobile)** e **i18n** (pt / en / es). **Tela inicial** de boas-vindas com convite para o canal da Comunidade ZDG no YouTube.
+- **Segurança** — App Secret só no servidor; secrets/tokens são criptografados em disco com AES-256-GCM; tokens de canal nunca vão ao navegador; webhooks são rejeitados sem `X-Hub-Signature-256` válida; sessão administrativa em cookie HttpOnly; produção exige senha, segredo de sessão, chave de dados e HTTPS; encaminhamentos bloqueiam redes privadas, redirects e DNS rebinding com o IP validado fixado no socket.
+- **Painel operacional** — **visão geral** (KPIs + gráfico de atividade da última hora + mix de canais), **console ao vivo** das interações (filtros, busca, payload com realce de sintaxe, som opcional), **canais como health cards** (status do webhook + sparkline), **command palette** (`Ctrl`/`⌘`+`K`), **tema claro/escuro**, layout **responsivo (mobile)** e **i18n** (pt / en / es).
 
 ---
 
@@ -29,9 +29,8 @@ Não valida licença e não depende de nenhum backend externo. Guarda os apps, c
 - Node.js 18+ (usa `fetch` e `crypto` nativos).
 
 ```bash
-# repositório standalone:
-git clone https://github.com/pedroherpeto/oauth-hub-zdg.git && cd oauth-hub-zdg
-# (no monorepo zpro-passaporte o projeto fica em: extra/oauth-hub)
+# fork @goldneuron.io:
+git clone https://github.com/monrars1995/oauth-hub-zdg.git && cd oauth-hub-zdg
 
 npm install
 cp .env.example .env   # opcional — dá para configurar tudo pelo painel
@@ -46,23 +45,23 @@ Abra `http://localhost:3300`.
 Há `Dockerfile`, `.dockerignore` e `docker-compose.yml` prontos. A imagem é multi-stage (compila o TypeScript e mantém só as dependências de produção), roda como usuário não-root e expõe `GET /health` como healthcheck. Os dados (`data/`) persistem num volume e os segredos vêm do `.env` — **nenhuma credencial é embutida na imagem**.
 
 ```bash
-cd oauth-hub-zdg              # ou extra/oauth-hub no monorepo
-cp .env.example .env          # preencha PUBLIC_URL, SESSION_SECRET, ADMIN_PASSWORD…
+cd oauth-hub-zdg
+cp .env.example .env          # preencha PUBLIC_URL, SESSION_SECRET, DATA_ENCRYPTION_KEY, ADMIN_PASSWORD…
 docker compose up -d --build
 ```
 
 - A porta **interna** do container é fixa em `3300`; escolha a do host com `HOST_PORT` (padrão `3300`): `HOST_PORT=8080 docker compose up -d`.
-- Logs: `docker compose logs -f` · atualizar: `docker compose up -d --build` · parar: `docker compose down` (os dados ficam no volume `oauth-hub-data`).
+- Logs: `docker compose logs -f` · atualizar: `docker compose up -d --build` · parar: `docker compose down` (os dados ficam no volume `goldneuron-meta-apphub-data`).
 
 Sem Compose (build/run direto):
 
 ```bash
-docker build -t oauth-hub .
-docker run -d --name oauth-hub \
+docker build -t goldneuron-meta-apphub .
+docker run -d --name goldneuron-meta-apphub \
   --env-file .env -e PORT=3300 \
   -p 3300:3300 \
-  -v oauth-hub-data:/app/data \
-  oauth-hub
+  -v goldneuron-meta-apphub-data:/app/data \
+  goldneuron-meta-apphub
 ```
 
 ---
@@ -76,7 +75,8 @@ Gerencie os **apps** pela aba **Apps** do painel (cada app tem suas credenciais 
 | `PORT` | Porta HTTP (padrão 3300) |
 | `PUBLIC_URL` | URL pública do hub, sem barra final (usada em redirect_uri e nas URLs de webhook) |
 | `ADMIN_PASSWORD` | Senha do painel. Vazio = painel **sem** autenticação (apenas dev) |
-| `SESSION_SECRET` | Segredo HMAC (state OAuth + sessão + assinatura). Defina em produção |
+| `SESSION_SECRET` | Segredo HMAC do state OAuth e dos cookies de sessão. Obrigatório em produção |
+| `DATA_ENCRYPTION_KEY` | Chave da criptografia AES-256-GCM dos secrets/tokens armazenados. Obrigatória em produção; ao promover um volume dev, use o conteúdo de `data/.data-encryption-key` |
 | `BRAND_NAME` | Nome de marca do painel |
 | `META_API_VERSION` | Versão padrão da Graph API ao criar apps |
 | `FORWARD_TIMEOUT_MS` | Timeout do encaminhamento (padrão 10000) |
@@ -137,10 +137,12 @@ Licenciado sob a **[GNU Affero General Public License v3.0](./LICENSE)**.
 Por ser um serviço de rede, a AGPL (§13) exige que os usuários que interagem com o
 hub remotamente possam obter o **código-fonte correspondente** da versão em execução.
 O painel exibe um link **"Código-fonte"** no rodapé apontando para o repositório
-(`SOURCE_URL`, padrão <https://github.com/pedroherpeto/oauth-hub-zdg>). Se você
+(`SOURCE_URL`, padrão <https://github.com/monrars1995/oauth-hub-zdg>). Se você
 modificar e publicar uma instância, mantenha esse link acessível e atualizado para a
 sua versão.
 
 ---
 
-Projeto de código aberto oferecido pela **[Comunidade ZDG](https://www.youtube.com/channel/UCrPbAoQKz42Gm0mLdWatAEA)**. Conheça o **[Z-PRO](https://zpro.zdg.com.br/)**.
+Fork mantido por **[@goldneuron.io](https://goldneuron.io/)**. Baseado no projeto
+original [`pedroherpeto/oauth-hub-zdg`](https://github.com/pedroherpeto/oauth-hub-zdg),
+com os avisos de copyright preservados em `LICENSE`, `NOTICE.md` e nos cabeçalhos do código.

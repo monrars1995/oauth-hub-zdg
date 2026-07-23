@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Messenger · ZDG</title>
+  <title>Messenger · @goldneuron.io</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <script src="/i18n-data.js"></script>
   <script src="/i18n.js"></script>
@@ -87,13 +87,13 @@
     }
 
     (function initStatic(){
-      document.title = T('cpop.msgr.title') + ' · ZDG';
+      document.title = T('cpop.msgr.title') + ' · @goldneuron.io';
       document.getElementById('title').textContent = T('cpop.msgr.title');
       setMsg(T('common.loading'));
       document.getElementById('btn').textContent = T('cpop.connectBtn');
-      var YT='https://www.youtube.com/channel/UCrPbAoQKz42Gm0mLdWatAEA', ZP='https://zpro.zdg.com.br/';
+      var BRAND='https://goldneuron.io/', NEUROS='https://neuros.codes/';
       document.getElementById('promoFoot').innerHTML =
-        '<a href="'+YT+'" target="_blank" rel="noopener">'+T('result.footer')+'</a> · <a href="'+ZP+'" target="_blank" rel="noopener">'+T('result.knowZpro')+'</a>';
+        '<a href="'+BRAND+'" target="_blank" rel="noopener">'+T('result.footer')+'</a> · <a href="'+NEUROS+'" target="_blank" rel="noopener">'+T('result.knowZpro')+'</a>';
     })();
 
     window.fbAsyncInit = function(){

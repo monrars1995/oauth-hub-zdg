@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import crypto from "crypto";
 import { Request, Response, NextFunction } from "express";
-import { SESSION_SECRET, ADMIN_PASSWORD } from "./config";
+import { SESSION_SECRET, ADMIN_PASSWORD, IS_PRODUCTION, PUBLIC_URL } from "./config";
 import { ChannelType, OAuthState } from "./types";
 
 function b64url(input: Buffer | string): string {
@@ -76,9 +76,25 @@ export function decodeState(token: string): OAuthState | null {
   return { channel: data.channel, appId: data.appId, lang: data.lang || "pt", nonce: data.nonce, iat: data.iat };
 }
 
+const consumedOAuthNonces = new Map<string, number>();
+
+/** Validate and atomically consume an OAuth state nonce. A replay returns null. */
+export function consumeState(token: string): OAuthState | null {
+  const state = decodeState(token);
+  if (!state) return null;
+  const now = Date.now();
+  for (const [nonce, consumedAt] of consumedOAuthNonces) {
+    if (now - consumedAt > STATE_TTL_MS) consumedOAuthNonces.delete(nonce);
+  }
+  if (consumedOAuthNonces.has(state.nonce)) return null;
+  consumedOAuthNonces.set(state.nonce, now);
+  return state;
+}
+
 // ─── Panel session token ──────────────────────────────────────────────────────
 
 const SESSION_TTL_MS = 12 * 60 * 60 * 1000; // 12h
+export const SESSION_COOKIE_NAME = "hub_session";
 
 export function issueSession(): string {
   return makeToken({ role: "admin" });
@@ -86,6 +102,34 @@ export function issueSession(): string {
 
 export function isValidSession(token: string): boolean {
   return verifyToken<{ role: string }>(token, SESSION_TTL_MS)?.role === "admin";
+}
+
+function cookieValue(req: Request, name: string): string {
+  const raw = req.headers.cookie || "";
+  for (const part of raw.split(";")) {
+    const index = part.indexOf("=");
+    if (index < 0 || part.slice(0, index).trim() !== name) continue;
+    try { return decodeURIComponent(part.slice(index + 1).trim()); } catch { return ""; }
+  }
+  return "";
+}
+
+function secureCookieRequired(): boolean {
+  if (IS_PRODUCTION) return true;
+  try { return new URL(PUBLIC_URL).protocol === "https:"; } catch { return false; }
+}
+
+export function setSessionCookie(res: Response, token: string): void {
+  const secure = secureCookieRequired() ? "; Secure" : "";
+  res.setHeader(
+    "Set-Cookie",
+    `${SESSION_COOKIE_NAME}=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${Math.floor(SESSION_TTL_MS / 1000)}${secure}`
+  );
+}
+
+export function clearSessionCookie(res: Response): void {
+  const secure = secureCookieRequired() ? "; Secure" : "";
+  res.setHeader("Set-Cookie", `${SESSION_COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0${secure}`);
 }
 
 /** Constant-time password compare. */
@@ -101,7 +145,8 @@ export function passwordMatches(input: string): boolean {
 export function requireAdmin(req: Request, res: Response, next: NextFunction): void {
   if (!ADMIN_PASSWORD) return next(); // open mode (dev)
   const header = req.headers["authorization"] || "";
-  const token = header.startsWith("Bearer ") ? header.slice(7) : "";
+  const bearer = header.startsWith("Bearer ") ? header.slice(7) : "";
+  const token = cookieValue(req, SESSION_COOKIE_NAME) || bearer;
   if (token && isValidSession(token)) return next();
   res.status(401).json({ error: "UNAUTHORIZED" });
 }

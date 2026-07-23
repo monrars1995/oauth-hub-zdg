@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1000" viewBox="0 0 1000 1000" role="img" aria-labelledby="title desc">
+  <title id="title">goldneuron.io lightbulb brain circuit logo</title>
+<desc id="desc">A premium gold line-art lightbulb logo containing a stylized neural brain and circuit traces.</desc>
+
+<defs>
+  <linearGradient id="goldStroke" gradientUnits="userSpaceOnUse" x1="190" y1="90" x2="800" y2="940">
+    <stop offset="0%" stop-color="#FFF3A8"/>
+    <stop offset="28%" stop-color="#F8C949"/>
+    <stop offset="58%" stop-color="#D99A04"/>
+    <stop offset="100%" stop-color="#FFDB62"/>
+  </linearGradient>
+  <linearGradient id="goldSoft" gradientUnits="userSpaceOnUse" x1="200" y1="100" x2="800" y2="940">
+    <stop offset="0%" stop-color="#FFED9F"/>
+    <stop offset="52%" stop-color="#E6A814"/>
+    <stop offset="100%" stop-color="#B97900"/>
+  </linearGradient>
+  <filter id="softGlow" x="-35%" y="-35%" width="170%" height="170%" color-interpolation-filters="sRGB">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="9" result="blur"/>
+    <feColorMatrix in="blur" type="matrix" values="1 0 0 0 1  0 0.74 0 0 0.56  0 0 0.20 0 0.08  0 0 0 0.85 0" result="glow"/>
+    <feMerge>
+      <feMergeNode in="glow"/>
+      <feMergeNode in="SourceGraphic"/>
+    </feMerge>
+  </filter>
+  <filter id="softShadow" x="-25%" y="-25%" width="150%" height="150%" color-interpolation-filters="sRGB">
+    <feDropShadow dx="0" dy="7" stdDeviation="6" flood-color="#000000" flood-opacity="0.20"/>
+  </filter>
+</defs>
+
+<g id="goldneuron-bulb-neural-mark" fill="none" stroke="url(#goldStroke)" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M410 770 C402 710 374 650 325 595 C260 523 225 438 232 345 C244 205 353 90 500 90 C647 90 756 205 768 345 C775 438 740 523 675 595 C626 650 598 710 590 770 Q587 788 568 788 L432 788 Q413 788 410 770 Z" stroke-width="34"/>
+  <path d="M490 215 C468 152 395 151 360 220 C320 220 288 252 286 292 C253 313 237 354 247 395 C256 434 286 458 323 450 C289 485 286 545 320 583 C340 606 367 618 392 618 C394 660 419 690 455 705 L455 788" stroke-width="26"/>
+  <path d="M510 215 C532 152 605 151 640 220 C680 220 712 252 714 292 C747 313 763 354 753 395 C744 434 714 458 677 450 C711 485 714 545 680 583 C660 606 633 618 608 618 C606 660 581 690 545 705 L545 788" stroke-width="26"/>
+  <path d="M500 188 L500 788" stroke-width="26"/>
+  <path d="M415 320 L415 402 L488 478" stroke-width="24"/>
+  <path d="M585 320 L585 402 L512 478" stroke-width="24"/>
+  <path d="M386 450 L420 450 L488 478" stroke-width="24"/>
+  <path d="M614 450 L580 450 L512 478" stroke-width="24"/>
+  <path d="M431 606 L455 635 L455 788" stroke-width="24"/>
+  <path d="M569 606 L545 635 L545 788" stroke-width="24"/>
+  <circle cx="415" cy="285" r="25" stroke-width="22"/>
+  <circle cx="585" cy="285" r="25" stroke-width="22"/>
+  <circle cx="350" cy="450" r="25" stroke-width="22"/>
+  <circle cx="650" cy="450" r="25" stroke-width="22"/>
+  <circle cx="405" cy="580" r="25" stroke-width="22"/>
+  <circle cx="595" cy="580" r="25" stroke-width="22"/>
+  <line x1="410" y1="835" x2="590" y2="835" stroke="url(#goldStroke)" stroke-width="27"/>
+  <line x1="420" y1="880" x2="580" y2="880" stroke="url(#goldStroke)" stroke-width="27"/>
+  <path d="M450 925 H550 Q535 970 500 975 Q465 970 450 925 Z" stroke-width="27"/>
+</g>
+</svg>
