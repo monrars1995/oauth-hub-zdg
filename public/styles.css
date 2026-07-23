@@ -210,7 +210,6 @@ textarea:focus-visible, [tabindex]:focus-visible {
 .login-brand-lockup .brand { font-size: 1.04rem; line-height: 1.25; font-weight: 760; letter-spacing: -.02em; }
 .login-brand-lockup .brand-by { margin-top: .12rem; color: oklch(60% .010 60); font-size: .73rem; }
 .login-context-copy { margin: auto 0; padding: 3rem 0; max-width: 570px; }
-.login-purpose { margin-bottom: .9rem; color: oklch(78% .135 80) !important; font-size: .78rem !important; font-weight: 700; }
 .login-context h1 {
   max-width: 13ch;
   margin-bottom: 1rem;
@@ -219,7 +218,7 @@ textarea:focus-visible, [tabindex]:focus-visible {
   letter-spacing: -.04em;
   text-wrap: balance;
 }
-.login-context-copy > p:not(.login-purpose) { max-width: 54ch; color: oklch(72% .010 65); font-size: .96rem; line-height: 1.7; text-wrap: pretty; }
+.login-context-copy > p { max-width: 54ch; color: oklch(72% .010 65); font-size: .96rem; line-height: 1.7; text-wrap: pretty; }
 .login-capabilities { max-width: 520px; margin-top: 2.25rem; border-bottom: 1px solid oklch(27% .012 55); }
 .login-capability {
   display: grid;
@@ -260,8 +259,6 @@ textarea:focus-visible, [tabindex]:focus-visible {
   justify-content: center;
   padding: clamp(2rem, 4vw, 3.5rem);
 }
-.login-access-state { display: inline-flex; align-items: center; gap: .5rem; margin-bottom: 1.15rem; color: var(--muted); font-size: .76rem; font-weight: 650; }
-.login-access-state > span:first-child { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); }
 .login-panel h2 { margin-bottom: .6rem; font-size: 1.8rem; line-height: 1.15; letter-spacing: -.035em; text-wrap: balance; }
 .login-form-lead { max-width: 40ch; margin-bottom: 1.8rem; color: var(--muted); font-size: .88rem; line-height: 1.65; }
 .login-field label { display: block; margin-bottom: .5rem; color: var(--text-2); font-size: .78rem; font-weight: 700; }
@@ -280,20 +277,6 @@ textarea:focus-visible, [tabindex]:focus-visible {
 .login-field input:focus { outline: 2px solid var(--signal); outline-offset: 2px; border-color: var(--border-strong); background: var(--surface); box-shadow: none; }
 .login-panel .err { min-height: 1.3rem; margin: .55rem 0 .5rem; color: var(--danger-ink); font-size: .78rem; }
 .login-submit { width: 100%; min-height: 48px; }
-.login-security-note {
-  display: grid;
-  grid-template-columns: 20px 1fr;
-  gap: .65rem;
-  margin-top: 1.15rem;
-  padding: .8rem .9rem;
-  border: 1px solid var(--border);
-  border-radius: var(--r-sm);
-  color: var(--muted);
-  background: var(--surface-2);
-  font-size: .72rem;
-  line-height: 1.55;
-}
-.login-security-note svg { width: 18px; height: 18px; margin-top: .05rem; color: var(--signal-ink); }
 .login-foot { margin-top: auto; padding-top: 2rem; color: var(--muted-2); font-size: .72rem; }
 .login-foot a { font-weight: 650; }
 .login-legal { display: flex; flex-wrap: wrap; gap: .35rem 1rem; margin-top: .85rem; padding-top: .85rem; border-top: 1px solid var(--border); }
@@ -305,7 +288,8 @@ textarea:focus-visible, [tabindex]:focus-visible {
   .login-shell { min-height: 0; grid-template-columns: 1fr; }
   .login-context { padding: 1.5rem; }
   .login-context-copy { margin: 0; padding: 2.25rem 0 1.5rem; }
-  .login-context h1 { max-width: 17ch; font-size: 2.15rem; }
+  .login-context h1 { max-width: 17ch; margin-bottom: 0; font-size: 2.15rem; }
+  .login-context-copy > p { display: none; }
   .login-capabilities { display: none; }
   .login-panel { border-top: 1px solid var(--border); border-left: 0; }
   .login-panel-inner { max-width: 100%; min-height: 0; padding: 2rem 1.5rem; }
@@ -321,7 +305,6 @@ textarea:focus-visible, [tabindex]:focus-visible {
   .login-capabilities { display: none; }
   .login-panel-inner { padding: 2rem 3rem; }
   .login-form-lead { margin-bottom: 1.25rem; }
-  .login-security-note { margin-top: .9rem; }
   .login-foot { padding-top: 1.25rem; }
 }
 

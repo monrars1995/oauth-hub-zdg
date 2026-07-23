@@ -46,9 +46,9 @@ A estratégia é restrita: neutros dominam a interface e o dourado aparece apena
 
 ## Tela inicial institucional
 
-- Papel: apresentar o ecossistema Goldneuron.io, NeurOS e Meta AppHub antes do acesso autenticado.
+- Papel: apresentar o ecossistema Goldneuron.io, NeurOS e NeuroHub Meta antes do acesso autenticado.
 - Composição aprovada: manifesto central minimalista, sem card flutuante e sem layout promocional em duas colunas.
-- Masthead: lockup Meta AppHub / @goldneuron.io à esquerda e acesso ao painel sempre visível à direita.
+- Masthead: lockup NeuroHub Meta / @goldneuron.io à esquerda e acesso ao painel sempre visível à direita.
 - Manifesto: símbolo dourado, headline “Inteligência aplicada às conexões que movem sua operação.” e texto específico sobre WhatsApp Business, Messenger, Instagram, Goldneuron.io e NeurOS.
 - CTAs institucionais permanecem em destaque; “Acessar o painel” é secundário, mas disponível sem rolagem em desktop.
 - Rodapé da viewport identifica as integrações oficiais Meta em uma linha compacta.
@@ -63,7 +63,8 @@ A estratégia é restrita: neutros dominam a interface e o dourado aparece apena
 
 ## Conteúdo e atribuição
 
-- Aplicação: `Meta AppHub` e `by @goldneuron.io`.
+- Aplicação: `NeuroHub Meta` e `by @goldneuron.io`.
+- Autenticação: copy direto; não exibir eyebrow de operação, badge de acesso restrito ou nota redundante sobre sessão/tokens.
 - CTAs externos apontam para `https://goldneuron.io`.
 - Não exibir ZDG/Z-PRO.
 - Preservar copyright, LICENSE e proveniência upstream em documentação legal, sem promovê-los na UI.

@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# Meta AppHub by @goldneuron.io — orquestração Docker.
+# NeuroHub Meta by @goldneuron.io — orquestração Docker.
 #   1) cp .env.example .env   (preencha PUBLIC_URL, SESSION_SECRET, DATA_ENCRYPTION_KEY e ADMIN_PASSWORD)
 #   2) docker compose up -d --build
 #

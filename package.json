@@ -1,7 +1,7 @@
 {
   "name": "goldneuron-meta-apphub",
   "version": "1.1.0",
-  "description": "Meta AppHub by @goldneuron.io: OAuth onboarding, authenticated Meta webhooks and secure event forwarding.",
+  "description": "NeuroHub Meta by @goldneuron.io: OAuth onboarding, authenticated Meta webhooks and secure event forwarding.",
   "license": "AGPL-3.0-only",
   "author": "@goldneuron.io",
   "homepage": "https://github.com/monrars1995/oauth-hub-zdg",

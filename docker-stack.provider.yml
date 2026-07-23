@@ -8,7 +8,7 @@ services:
       NODE_ENV: production
       PORT: "3300"
       PUBLIC_URL: https://provider.neuros.my
-      BRAND_NAME: Meta AppHub
+      BRAND_NAME: NeuroHub Meta
       SOURCE_URL: https://github.com/monrars1995/oauth-hub-zdg
       META_API_VERSION: v25.0
       ADMIN_PASSWORD_FILE: /run/secrets/admin_password

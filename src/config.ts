@@ -61,6 +61,9 @@ export const CORS_ALLOWED_ORIGINS = env("CORS_ALLOWED_ORIGINS")
 // Shown as a "Source" link in the panel footer. Override via env if you fork.
 export const SOURCE_URL = (env("SOURCE_URL") || "https://github.com/monrars1995/oauth-hub-zdg").replace(/\/$/, "");
 
+const DEFAULT_BRAND = "NeuroHub Meta";
+const LEGACY_DEFAULT_BRANDS = new Set(["Meta AppHub"]);
+
 const SESSION_SECRET_FROM_ENV = env("SESSION_SECRET");
 const DATA_ENCRYPTION_KEY_FROM_ENV = env("DATA_ENCRYPTION_KEY");
 export const SESSION_SECRET = (() => {
@@ -95,7 +98,11 @@ export const SESSION_SECRET = (() => {
 })();
 
 export function getBrand(): string {
-  return getSettings().brandName || env("BRAND_NAME") || "Meta AppHub";
+  const configuredBrand = (getSettings().brandName || "").trim();
+  if (configuredBrand && !LEGACY_DEFAULT_BRANDS.has(configuredBrand)) return configuredBrand;
+  const environmentBrand = env("BRAND_NAME");
+  if (environmentBrand && !LEGACY_DEFAULT_BRANDS.has(environmentBrand)) return environmentBrand;
+  return DEFAULT_BRAND;
 }
 
 export function isAllowedBrowserOrigin(origin: string): boolean {

@@ -1,6 +1,6 @@
 # Notices and attribution
 
-## Meta AppHub by @goldneuron.io
+## NeuroHub Meta by @goldneuron.io
 
 This distribution is a modified fork maintained by **@goldneuron.io** under the
 GNU Affero General Public License v3.0. The corresponding source is available at:

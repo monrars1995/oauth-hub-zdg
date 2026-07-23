@@ -167,6 +167,30 @@ test("login uses an HttpOnly SameSite cookie and does not expose the session tok
   }
 });
 
+test("the legacy default brand migrates to NeuroHub Meta without overriding custom brands", async () => {
+  const server = await startServer({ BRAND_NAME: "NeuroHub Meta" });
+  try {
+    const session = await login(server.base);
+    const legacy = await request(server.base, "/api/settings", {
+      method: "POST",
+      headers: session.authHeaders,
+      body: { brandName: "Meta AppHub" },
+    });
+    assert.equal(legacy.status, 200);
+    assert.equal(legacy.body.brandName, "NeuroHub Meta");
+
+    const custom = await request(server.base, "/api/settings", {
+      method: "POST",
+      headers: session.authHeaders,
+      body: { brandName: "Hub do Cliente" },
+    });
+    assert.equal(custom.status, 200);
+    assert.equal(custom.body.brandName, "Hub do Cliente");
+  } finally {
+    await server.stop();
+  }
+});
+
 test("production refuses to start without an admin password", async () => {
   const dir = makeSandbox();
   const port = await freePort();
@@ -741,7 +765,7 @@ test("legal pages are public and identify the responsible company", async () => 
       assert.match(response.headers.get("content-type") || "", /text\/html/i);
       assert.match(response.text, /GOLDNEURON\.IO INOVA SIMPLES I\.S\. - ME/);
       assert.match(response.text, /63\.173\.644\/0001-00/);
-      assert.match(response.text, /Meta AppHub/);
+      assert.match(response.text, /NeuroHub Meta/);
     }
   } finally {
     await server.stop();
@@ -796,6 +820,30 @@ test("the welcome screen is a responsive institutional manifesto with persistent
   assert.equal(pt["welcome.title"], "Inteligência aplicada às conexões que movem sua operação.");
   assert.match(pt["welcome.lead"], /WhatsApp Business, Messenger e Instagram/);
   assert.equal(pt["welcome.foot"], "Integrações oficiais Meta");
+});
+
+test("visible surfaces use NeuroHub Meta and the login omits redundant trust copy", () => {
+  const visibleFiles = [
+    "public/index.html",
+    "public/politica-privacidade.html",
+    "public/termos-servico.html",
+    "public/lgpd.html",
+    "locales/pt.json",
+    "locales/en.json",
+    "locales/es.json",
+  ];
+  const visible = visibleFiles.map((name) => fs.readFileSync(path.join(ROOT, name), "utf8")).join("\n");
+  const html = fs.readFileSync(path.join(ROOT, "public", "index.html"), "utf8");
+
+  assert.match(visible, /NeuroHub Meta/);
+  assert.doesNotMatch(visible, /Meta AppHub/);
+  assert.doesNotMatch(html, /login-purpose|login-access-state|login-security-note/);
+  for (const locale of ["pt", "en", "es"]) {
+    const copy = JSON.parse(fs.readFileSync(path.join(ROOT, "locales", `${locale}.json`), "utf8"));
+    assert.equal(Object.hasOwn(copy, "login.purpose"), false);
+    assert.equal(Object.hasOwn(copy, "login.restricted"), false);
+    assert.equal(Object.hasOwn(copy, "login.securityNote"), false);
+  }
 });
 
 test("visible application surfaces use only the @goldneuron.io brand", () => {

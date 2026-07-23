@@ -1,4 +1,4 @@
-// Meta AppHub — secure forwarding for Meta webhooks.
+// NeuroHub Meta — secure forwarding for Meta webhooks.
 // Copyright (C) 2026 @goldneuron.io
 //
 // This program is free software: you can redistribute it and/or modify

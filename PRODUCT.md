@@ -2,7 +2,7 @@
 
 ## Produto
 
-**Meta AppHub** é o hub operacional da @goldneuron.io para configurar múltiplos aplicativos Meta, conectar canais oficiais de WhatsApp Business, Messenger e Instagram, receber webhooks assinados e encaminhá-los com segurança a sistemas autorizados.
+**NeuroHub Meta** é o hub operacional da @goldneuron.io para configurar múltiplos aplicativos Meta, conectar canais oficiais de WhatsApp Business, Messenger e Instagram, receber webhooks assinados e encaminhá-los com segurança a sistemas autorizados.
 
 ## Registro
 
@@ -21,7 +21,7 @@
 
 ## Marca visível
 
-- Nome: **Meta AppHub**.
+- Nome: **NeuroHub Meta**.
 - Crédito: **by @goldneuron.io**.
 - Site: <https://goldneuron.io>.
 - Logotipo: `public/assets/goldneuron_logo_mark.svg`, obtido da fonte oficial <https://neuros.codes/brand/goldneuron_logo_mark.svg>.

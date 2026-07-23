@@ -1,4 +1,4 @@
-# Meta AppHub — by @goldneuron.io
+# NeuroHub Meta — by @goldneuron.io
 
 Hub **standalone**, **multi-app** e **whitelabel** para conectar canais da **Meta** — WhatsApp Business (Cloud API / Embedded Signup), **Messenger** (Páginas) e **Instagram** (Instagram Login) — **receber + visualizar** as interações (webhooks) e **rotear (encaminhar)** esses webhooks, por app, para outros sistemas.
 
