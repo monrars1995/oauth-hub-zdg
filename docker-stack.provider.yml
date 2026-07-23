@@ -1,0 +1,83 @@
+# Production Swarm deployment for provider.neuros.my on a Dokploy-managed VPS.
+# Build the image on the single manager node, create the three external secrets,
+# export APP_IMAGE with an immutable tag, then deploy stack "meta-provider".
+services:
+  meta-apphub:
+    image: ${APP_IMAGE:-goldneuron-meta-apphub:provider}
+    environment:
+      NODE_ENV: production
+      PORT: "3300"
+      PUBLIC_URL: https://provider.neuros.my
+      BRAND_NAME: Meta AppHub
+      SOURCE_URL: https://github.com/monrars1995/oauth-hub-zdg
+      META_API_VERSION: v25.0
+      ADMIN_PASSWORD_FILE: /run/secrets/admin_password
+      SESSION_SECRET_FILE: /run/secrets/session_secret
+      DATA_ENCRYPTION_KEY_FILE: /run/secrets/data_encryption_key
+    secrets:
+      - source: meta_apphub_admin_password
+        target: admin_password
+      - source: meta_apphub_session_secret
+        target: session_secret
+      - source: meta_apphub_data_encryption_key
+        target: data_encryption_key
+    volumes:
+      - meta_apphub_data:/app/data
+    networks:
+      - dokploy-network
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 1
+        order: stop-first
+        failure_action: rollback
+        monitor: 30s
+      rollback_config:
+        parallelism: 1
+        order: stop-first
+        monitor: 30s
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 60s
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "0.75"
+          memory: 512M
+        reservations:
+          memory: 128M
+      labels:
+        traefik.enable: "true"
+        traefik.docker.network: dokploy-network
+        traefik.http.routers.meta-provider.rule: Host(`provider.neuros.my`)
+        traefik.http.routers.meta-provider.entrypoints: websecure
+        traefik.http.routers.meta-provider.tls.certresolver: letsencrypt
+        traefik.http.routers.meta-provider.service: meta-provider
+        traefik.http.services.meta-provider.loadbalancer.server.port: "3300"
+        traefik.http.services.meta-provider.loadbalancer.passhostheader: "true"
+
+volumes:
+  meta_apphub_data:
+
+networks:
+  dokploy-network:
+    external: true
+
+secrets:
+  meta_apphub_admin_password:
+    external: true
+  meta_apphub_session_secret:
+    external: true
+  meta_apphub_data_encryption_key:
+    external: true

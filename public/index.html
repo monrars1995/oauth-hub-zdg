@@ -9,26 +9,79 @@
   <script>(function(){try{var s=localStorage.getItem('hub_theme');var d=s?s==='dark':(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d)document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
 
   <!-- ── Login ─────────────────────────────────────────────── -->
   <div id="login" class="login-wrap hidden">
-    <div class="login-card">
-      <div class="login-logo"><a href="https://goldneuron.io/" target="_blank" rel="noopener" aria-label="@goldneuron.io" style="display:flex;width:100%;height:100%"><img src="/assets/goldneuron_logo_mark.svg" alt="@goldneuron.io" /></a></div>
-      <div class="brand" id="loginBrand">Meta AppHub</div>
-      <div class="sub" data-i18n="login.subtitle">Painel de conexão de canais Meta</div>
-      <form id="loginForm">
-        <input type="password" id="loginPass" autocomplete="current-password" data-i18n-ph="login.password" data-i18n-aria="login.password" />
-        <div class="err" id="loginErr" role="alert"></div>
-        <button class="btn" id="loginBtn" type="submit" style="width:100%" data-i18n="login.enter">Entrar</button>
-      </form>
-      <div class="login-foot">
-        <a href="https://goldneuron.io/" target="_blank" rel="noopener" class="brand-wordmark">@goldneuron.io</a>
-        <div id="loginFoot"></div>
-      </div>
+    <div class="login-shell">
+      <section class="login-context" aria-labelledby="loginContextTitle">
+        <div class="login-brand-lockup">
+          <a class="login-logo" href="https://goldneuron.io/" target="_blank" rel="noopener" aria-label="@goldneuron.io">
+            <img src="/assets/goldneuron_logo_mark.svg" alt="@goldneuron.io" />
+          </a>
+          <div>
+            <div class="brand" id="loginBrand">Meta AppHub</div>
+            <div class="brand-by">by @goldneuron.io</div>
+          </div>
+        </div>
+
+        <div class="login-context-copy">
+          <p class="login-purpose" data-i18n="login.purpose">Operação Meta centralizada</p>
+          <h1 id="loginContextTitle" data-i18n="login.contextTitle">Conexões oficiais, controle em um só lugar.</h1>
+          <p data-i18n="login.contextBody">Configure aplicativos, autorize canais e acompanhe webhooks assinados com acesso restrito à sua equipe.</p>
+
+          <div class="login-capabilities" aria-label="Recursos de segurança">
+            <div class="login-capability">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg>
+              <div><strong data-i18n="login.capabilitySecureTitle">Segurança por padrão</strong><span data-i18n="login.capabilitySecureBody">Segredos criptografados e webhooks validados.</span></div>
+            </div>
+            <div class="login-capability">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 17V7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v10"/><path d="M2 17h20v2a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-2Z"/><path d="M9 9h6M9 13h4"/></svg>
+              <div><strong data-i18n="login.capabilityControlTitle">Visibilidade operacional</strong><span data-i18n="login.capabilityControlBody">Apps, canais e entregas em um único console.</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="login-channels" aria-label="Canais Meta suportados">
+          <span><img src="/assets/waba.png" alt="" /> WhatsApp</span>
+          <span><img src="/assets/messenger.png" alt="" /> Messenger</span>
+          <span><img src="/assets/instagram.png" alt="" /> Instagram</span>
+        </div>
+      </section>
+
+      <section class="login-panel" aria-labelledby="loginFormTitle">
+        <div class="login-panel-inner">
+          <div class="login-access-state"><span aria-hidden="true"></span><span data-i18n="login.restricted">Ambiente de acesso restrito</span></div>
+          <h2 id="loginFormTitle" data-i18n="login.formTitle">Acessar o painel</h2>
+          <p class="login-form-lead" data-i18n="login.formBody">Use a credencial administrativa definida para este ambiente.</p>
+
+          <form id="loginForm">
+            <div class="login-field">
+              <label for="loginPass" data-i18n="login.passwordLabel">Senha de acesso</label>
+              <input type="password" id="loginPass" autocomplete="current-password" required data-i18n-ph="login.password" data-i18n-aria="login.password" />
+            </div>
+            <div class="err" id="loginErr" role="alert" aria-live="polite"></div>
+            <button class="btn login-submit" id="loginBtn" type="submit" data-i18n="login.enter">Entrar no painel</button>
+          </form>
+
+          <div class="login-security-note">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+            <span data-i18n="login.securityNote">A sessão é protegida e os tokens dos canais permanecem somente no servidor.</span>
+          </div>
+
+          <footer class="login-foot">
+            <div id="loginFoot"></div>
+            <nav class="login-legal" aria-label="Documentos legais">
+              <a href="/politica-privacidade" data-i18n="login.privacy">Privacidade</a>
+              <a href="/termos-servico" data-i18n="login.terms">Termos de Serviço</a>
+              <a href="/lgpd" data-i18n="login.lgpd">LGPD</a>
+            </nav>
+          </footer>
+        </div>
+      </section>
     </div>
   </div>
 

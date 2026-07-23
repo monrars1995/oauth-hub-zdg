@@ -946,8 +946,18 @@ app.get("/i18n-data.js", (_req: Request, res: Response) => {
   res.send(localesScript());
 });
 
-app.use(express.static(path.join(__dirname, "..", "public")));
-app.get("/", (_req: Request, res: Response) => res.sendFile(path.join(__dirname, "..", "public", "index.html")));
+const publicDir = path.join(__dirname, "..", "public");
+const legalDocuments: Record<string, string> = {
+  "/politica-privacidade": "politica-privacidade.html",
+  "/termos-servico": "termos-servico.html",
+  "/lgpd": "lgpd.html",
+};
+app.get(Object.keys(legalDocuments), (req: Request, res: Response) => {
+  res.setHeader("Cache-Control", "public, max-age=300");
+  res.sendFile(path.join(publicDir, legalDocuments[req.path]));
+});
+app.use(express.static(publicDir));
+app.get("/", (_req: Request, res: Response) => res.sendFile(path.join(publicDir, "index.html")));
 app.use("/api", (_req: Request, res: Response) => res.status(404).json({ error: "NOT_FOUND" }));
 app.use((error: unknown, req: Request, res: Response, next: NextFunction) => {
   if (res.headersSent) return next(error);

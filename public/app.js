@@ -358,11 +358,19 @@
     }).catch(function () { show($("login")); });
   }
   function doLogin() {
-    $("loginErr").textContent = ""; $("loginBtn").disabled = true;
+    var loginButton = $("loginBtn");
+    $("loginErr").textContent = "";
+    loginButton.disabled = true;
+    loginButton.setAttribute("aria-busy", "true");
+    loginButton.textContent = t("login.authenticating");
     api("/api/login", { method: "POST", body: { password: $("loginPass").value } })
       .then(function () { hide($("login")); enterApp(); })
       .catch(function (e) { $("loginErr").textContent = e.message || t("login.invalid"); })
-      .then(function () { $("loginBtn").disabled = false; });
+      .then(function () {
+        loginButton.disabled = false;
+        loginButton.removeAttribute("aria-busy");
+        loginButton.textContent = t("login.enter");
+      });
   }
   function sessionExpired() {
     if (eventsTimer) { clearInterval(eventsTimer); eventsTimer = null; }

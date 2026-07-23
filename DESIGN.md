@@ -18,7 +18,7 @@ Dashboard dark-first para operação técnica, com neutros profundos e acento do
 | Foco | `rgba(183,121,0,.42)` | `rgba(242,185,48,.42)` |
 
 - Botão gold em tema claro usa fundo escuro `#956000` com texto branco.
-- Botão gold em tema escuro usa fundo `#A96B00` com texto branco.
+- Botão gold em tema escuro usa fundo `#9C6100` com texto branco.
 - Verde permanece reservado para sucesso; vermelho para erro; azul para informação.
 - WhatsApp, Messenger e Instagram preservam suas cores de produto.
 

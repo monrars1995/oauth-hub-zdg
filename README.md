@@ -77,6 +77,9 @@ Gerencie os **apps** pela aba **Apps** do painel (cada app tem suas credenciais 
 | `ADMIN_PASSWORD` | Senha do painel. Vazio = painel **sem** autenticação (apenas dev) |
 | `SESSION_SECRET` | Segredo HMAC do state OAuth e dos cookies de sessão. Obrigatório em produção |
 | `DATA_ENCRYPTION_KEY` | Chave da criptografia AES-256-GCM dos secrets/tokens armazenados. Obrigatória em produção; ao promover um volume dev, use o conteúdo de `data/.data-encryption-key` |
+| `ADMIN_PASSWORD_FILE` | Arquivo Docker/Kubernetes Secret alternativo a `ADMIN_PASSWORD` |
+| `SESSION_SECRET_FILE` | Arquivo Docker/Kubernetes Secret alternativo a `SESSION_SECRET` |
+| `DATA_ENCRYPTION_KEY_FILE` | Arquivo Docker/Kubernetes Secret alternativo a `DATA_ENCRYPTION_KEY` |
 | `BRAND_NAME` | Nome de marca do painel |
 | `META_API_VERSION` | Versão padrão da Graph API ao criar apps |
 | `FORWARD_TIMEOUT_MS` | Timeout do encaminhamento (padrão 10000) |
@@ -112,6 +115,11 @@ Coloque o serviço atrás de **HTTPS** — a Meta exige HTTPS para OAuth e webho
 
 **Embed (público, sem auth — gated por `embedEnabled` do app)**
 - `GET /embed/connect?app=<id>&channel=<waba|messenger|instagram>` → abre a conexão daquele app.
+
+**Documentos legais públicos**
+- `GET /politica-privacidade`
+- `GET /termos-servico`
+- `GET /lgpd`
 
 **Webhooks (a Meta chama)**
 - `GET|POST /webhook/app/:appKey` (+ `/:product`) — por app (recomendado)

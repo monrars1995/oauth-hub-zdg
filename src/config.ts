@@ -28,7 +28,15 @@ import { MetaApp, MetaAppPublic } from "./types";
 import * as store from "./store";
 
 function env(name: string): string {
-  return (process.env[name] || "").trim();
+  const direct = (process.env[name] || "").trim();
+  if (direct) return direct;
+  const secretFile = (process.env[`${name}_FILE`] || "").trim();
+  if (!secretFile) return "";
+  try {
+    return fs.readFileSync(secretFile, "utf-8").trim();
+  } catch {
+    throw new Error(`[config] Could not read ${name}_FILE`);
+  }
 }
 
 export const NODE_ENV = env("NODE_ENV") || "development";

@@ -198,6 +198,37 @@ test("production refuses to start without an admin password", async () => {
   assert.match(output, /DATA_ENCRYPTION_KEY/i);
 });
 
+test("production accepts Docker-style secret files without direct secret env values", async () => {
+  const secretsDir = fs.mkdtempSync(path.join(os.tmpdir(), "meta-apphub-secrets-"));
+  const adminFile = path.join(secretsDir, "admin-password");
+  const sessionFile = path.join(secretsDir, "session-secret");
+  const encryptionFile = path.join(secretsDir, "data-encryption-key");
+  fs.writeFileSync(adminFile, "file-backed-admin-password");
+  fs.writeFileSync(sessionFile, "file-backed-session-secret-that-is-long-enough");
+  fs.writeFileSync(encryptionFile, "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef");
+  let server;
+  try {
+    server = await startServer({
+      NODE_ENV: "production",
+      PUBLIC_URL: "https://provider.neuros.my",
+      ADMIN_PASSWORD: "",
+      SESSION_SECRET: "",
+      DATA_ENCRYPTION_KEY: "",
+      ADMIN_PASSWORD_FILE: adminFile,
+      SESSION_SECRET_FILE: sessionFile,
+      DATA_ENCRYPTION_KEY_FILE: encryptionFile,
+    });
+    const response = await request(server.base, "/api/login", {
+      method: "POST",
+      body: { password: "file-backed-admin-password" },
+    });
+    assert.equal(response.status, 200);
+  } finally {
+    if (server) await server.stop();
+    fs.rmSync(secretsDir, { recursive: true, force: true });
+  }
+});
+
 test("CORS rejects a foreign browser origin", async () => {
   const server = await startServer();
   try {
@@ -699,6 +730,36 @@ test("evidence writes require an explicit second confirmation before any externa
   }
 });
 
+test("legal pages are public and identify the responsible company", async () => {
+  const server = await startServer();
+  try {
+    for (const route of ["/politica-privacidade", "/termos-servico", "/lgpd"]) {
+      const response = await request(server.base, route);
+      assert.equal(response.status, 200, route);
+      assert.match(response.headers.get("content-type") || "", /text\/html/i);
+      assert.match(response.text, /GOLDNEURON\.IO INOVA SIMPLES I\.S\. - ME/);
+      assert.match(response.text, /63\.173\.644\/0001-00/);
+      assert.match(response.text, /Meta AppHub/);
+    }
+  } finally {
+    await server.stop();
+  }
+});
+
+test("the authentication page exposes accessible public legal links", async () => {
+  const server = await startServer();
+  try {
+    const response = await request(server.base, "/");
+    assert.equal(response.status, 200);
+    assert.match(response.text, /<label[^>]+for="loginPass"/i);
+    assert.match(response.text, /href="\/politica-privacidade"/);
+    assert.match(response.text, /href="\/termos-servico"/);
+    assert.match(response.text, /href="\/lgpd"/);
+  } finally {
+    await server.stop();
+  }
+});
+
 test("visible application surfaces use only the @goldneuron.io brand", () => {
   const files = [
     "public/index.html",
@@ -706,6 +767,9 @@ test("visible application surfaces use only the @goldneuron.io brand", () => {
     "public/connect-waba.html",
     "public/connect-messenger.html",
     "public/connect-instagram.html",
+    "public/politica-privacidade.html",
+    "public/termos-servico.html",
+    "public/lgpd.html",
     "locales/pt.json",
     "locales/en.json",
     "locales/es.json",
