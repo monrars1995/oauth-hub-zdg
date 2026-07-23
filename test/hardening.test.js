@@ -223,6 +223,8 @@ test("production accepts Docker-style secret files without direct secret env val
       body: { password: "file-backed-admin-password" },
     });
     assert.equal(response.status, 200);
+    assert.match(response.headers.get("strict-transport-security") || "", /max-age=31536000/i);
+    assert.match(response.headers.get("content-security-policy") || "", /default-src 'self'/i);
   } finally {
     if (server) await server.stop();
     fs.rmSync(secretsDir, { recursive: true, force: true });

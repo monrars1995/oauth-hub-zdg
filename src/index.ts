@@ -31,6 +31,7 @@ import path from "path";
 import {
   PORT,
   PUBLIC_URL,
+  IS_PRODUCTION,
   ADMIN_PASSWORD,
   WEBHOOK_DEBUG_LOG,
   DEFAULT_API_VERSION,
@@ -83,6 +84,22 @@ app.use((req: Request, res: Response, next) => {
   res.setHeader("Referrer-Policy", "same-origin");
   res.setHeader("X-Frame-Options", "SAMEORIGIN");
   res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  res.setHeader(
+    "Content-Security-Policy",
+    [
+      "default-src 'self'",
+      "base-uri 'self'",
+      "object-src 'none'",
+      "frame-ancestors 'self'",
+      "form-action 'self'",
+      "script-src 'self' 'unsafe-inline'",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "font-src 'self' https://fonts.gstatic.com",
+      "img-src 'self' data:",
+      "connect-src 'self'",
+    ].join("; ")
+  );
+  if (IS_PRODUCTION) res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
   const origin = req.headers.origin;
   if (origin && !isAllowedBrowserOrigin(origin)) {
     res.status(403).json({ error: "ORIGIN_NOT_ALLOWED" });
