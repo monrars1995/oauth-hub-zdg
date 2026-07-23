@@ -23,7 +23,7 @@
 // No external license check and no dependency on any other backend.
 // ─────────────────────────────────────────────────────────────────────────────
 import "dotenv/config";
-import express, { Request, Response } from "express";
+import express, { NextFunction, Request, Response } from "express";
 import rateLimit from "express-rate-limit";
 import fs from "fs";
 import path from "path";
@@ -280,12 +280,11 @@ app.put("/api/apps/:id", apiLimiter, requireAdmin, (req: Request, res: Response)
   if (typeof b.wabaConfigId === "string") patch.wabaConfigId = b.wabaConfigId.trim();
   if (typeof b.messengerConfigId === "string") patch.messengerConfigId = b.messengerConfigId.trim();
   if (typeof b.instagramAppId === "string") patch.instagramAppId = b.instagramAppId.trim();
-  if (typeof b.webhookVerifyToken === "string") patch.webhookVerifyToken = b.webhookVerifyToken.trim();
-  // Secrets/tokens: only overwrite when a non-empty value is sent; "__clear__" wipes it.
-  if (typeof b.appSecret === "string" && b.appSecret.trim()) patch.appSecret = b.appSecret.trim();
-  if (typeof b.instagramAppSecret === "string" && b.instagramAppSecret.trim()) patch.instagramAppSecret = b.instagramAppSecret.trim();
-  if (typeof b.messengerFallbackToken === "string" && b.messengerFallbackToken.trim()) {
-    patch.messengerFallbackToken = b.messengerFallbackToken.trim() === "__clear__" ? "" : b.messengerFallbackToken.trim();
+  // Secrets/tokens: an empty or omitted field preserves the current value;
+  // the explicit "__clear__" sentinel wipes it; any other value replaces it.
+  for (const field of ["appSecret", "instagramAppSecret", "messengerFallbackToken", "webhookVerifyToken"] as const) {
+    const value = typeof b[field] === "string" ? b[field].trim() : "";
+    if (value) patch[field] = value === "__clear__" ? "" : value;
   }
   if (b.forwards !== undefined) {
     try {
@@ -775,24 +774,36 @@ app.get("/embed/connect", apiLimiter, (req: Request, res: Response) => {
 // ─────────────────────────────────────────────────────────────────────────────
 // WEBHOOKS — per-app verify + receive, then route (forward) per-app.
 // ─────────────────────────────────────────────────────────────────────────────
-function relayToApp(appCfg: MetaApp, product: ChannelType | "unknown", rawBody: string | undefined, sigHeader: string | undefined, eventId: string | null): number {
-  const dests = (appCfg.forwards || []).filter(
+function forwardDestinations(appCfg: MetaApp, product: ChannelType | "unknown") {
+  return (appCfg.forwards || []).filter(
     (f) => f.enabled && (f.products.includes("all") || (product !== "unknown" && f.products.includes(product)))
   );
+}
+
+function recordForwardResult(appId: string, eventId: string | null, url: string, ok: boolean, status: number | string): void {
+  if (!eventId) return;
+  try {
+    store.setEventForward(eventId, url, ok, status);
+  } catch (error) {
+    console.error(`[store] could not persist forward result app=${appId} event=${eventId}:`, error);
+  }
+}
+
+function relayToApp(appCfg: MetaApp, product: ChannelType | "unknown", rawBody: string | undefined, sigHeader: string | undefined, eventId: string | null): number {
+  const dests = forwardDestinations(appCfg, product);
   if (!dests.length) return 0;
   // eventId is null in relay-only mode (no history): we still forward, just skip event bookkeeping.
-  if (eventId) store.updateEvent(eventId, { forwards: dests.map((d) => ({ url: d.url, ok: false, status: "pending" })) });
   for (const d of dests) {
     setImmediate(async () => {
       try {
         const headers: Record<string, string> = { "Content-Type": "application/json", "X-Hub-App": appCfg.id };
         if (sigHeader) headers["X-Hub-Signature-256"] = sigHeader;
         const r = await postSafeForwardUrl(d.url, rawBody || "{}", headers, FORWARD_TIMEOUT_MS);
-        if (eventId) store.setEventForward(eventId, d.url, r.ok, r.status);
+        recordForwardResult(appCfg.id, eventId, d.url, r.ok, r.status);
         if (WEBHOOK_DEBUG_LOG) console.log(`[forward] app=${appCfg.id} status=${r.status}`);
       } catch (err: any) {
         const status = err instanceof UnsafeForwardUrlError ? "blocked" : (err?.name === "AbortError" ? "timeout" : "error");
-        if (eventId) store.setEventForward(eventId, d.url, false, status);
+        recordForwardResult(appCfg.id, eventId, d.url, false, status);
         if (WEBHOOK_DEBUG_LOG) console.log(`[forward] app=${appCfg.id} failed=${status}`);
       }
     });
@@ -852,7 +863,7 @@ function ingest(appCfg: MetaApp | null, req: Request): number {
     direction: "in",
     summary: parsed.summary,
     signatureValid: true,
-    forwards: [],
+    forwards: forwardDestinations(resolved, parsed.product).map((destination) => ({ url: destination.url, ok: false, status: "pending" })),
     raw: body,
   };
   // storeEvents=false → relay-only ("transacional"): forward without keeping history.
@@ -938,6 +949,12 @@ app.get("/i18n-data.js", (_req: Request, res: Response) => {
 app.use(express.static(path.join(__dirname, "..", "public")));
 app.get("/", (_req: Request, res: Response) => res.sendFile(path.join(__dirname, "..", "public", "index.html")));
 app.use("/api", (_req: Request, res: Response) => res.status(404).json({ error: "NOT_FOUND" }));
+app.use((error: unknown, req: Request, res: Response, next: NextFunction) => {
+  if (res.headersSent) return next(error);
+  console.error(`[http] ${req.method} ${req.path} failed:`, error);
+  if (req.path.startsWith("/api/")) return res.status(500).json({ error: "INTERNAL_ERROR" });
+  res.sendStatus(500);
+});
 
 assertProductionConfig();
 seedAppFromEnvIfEmpty(() => newId().slice(0, 10));

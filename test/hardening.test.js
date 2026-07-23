@@ -391,6 +391,131 @@ test("multi-app channel storage keys by app, type and external id", async () => 
   fs.rmSync(dir, { recursive: true, force: true });
 });
 
+test("store write failures propagate and roll back the in-memory mutation", async () => {
+  const dir = makeSandbox();
+  const store = require(path.join(dir, "dist", "store.js"));
+  const originalRename = fs.renameSync;
+  let attempted = false;
+  fs.renameSync = function failAppsRename(source, destination) {
+    if (String(destination).endsWith("apps.json")) {
+      attempted = true;
+      const error = new Error("simulated persistence failure");
+      error.code = "EACCES";
+      throw error;
+    }
+    return originalRename.call(this, source, destination);
+  };
+  let thrown = null;
+  try {
+    try {
+      store.addApp({
+        id: "must-rollback", name: "Rollback", appId: "meta-rollback", appSecret: "secret", apiVersion: "v25.0",
+        wabaConfigId: "", messengerConfigId: "", instagramAppId: "", instagramAppSecret: "",
+        messengerFallbackToken: "", webhookVerifyToken: "", forwards: [], storeEvents: true,
+        embedEnabled: false, createdAt: new Date().toISOString(),
+      });
+    } catch (error) {
+      thrown = error;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    assert.equal(attempted, true);
+    assert.ok(thrown instanceof Error);
+    assert.equal(store.findApp("must-rollback"), undefined);
+  } finally {
+    fs.renameSync = originalRename;
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("admin API returns 500 and keeps cache unchanged when persistence is unavailable", async () => {
+  const server = await startServer({ DATA_ENCRYPTION_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef" });
+  const dataDir = path.join(server.dir, "data");
+  fs.mkdirSync(dataDir, { recursive: true, mode: 0o700 });
+  fs.mkdirSync(path.join(dataDir, "apps.json"));
+  try {
+    const session = await login(server.base);
+    const created = await createApp(server, session.authHeaders);
+    assert.equal(created.status, 500);
+    assert.deepEqual(created.body, { error: "INTERNAL_ERROR" });
+    assert.doesNotMatch(created.text, /apps\.json|EISDIR|rename/i);
+    const listed = await request(server.base, "/api/apps", { headers: session.authHeaders });
+    assert.equal(listed.status, 200);
+    assert.deepEqual(listed.body.apps, []);
+  } finally {
+    await server.stop();
+  }
+});
+
+test("a signed webhook returns 500 and is not cached when event persistence fails", async () => {
+  const server = await startServer({ DATA_ENCRYPTION_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef" });
+  try {
+    const session = await login(server.base);
+    const created = await createApp(server, session.authHeaders);
+    const eventsPath = path.join(server.dir, "data", "events.json");
+    fs.mkdirSync(eventsPath);
+    const raw = JSON.stringify(whatsappPayload());
+    const response = await request(server.base, `/webhook/app/${created.body.app.id}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Hub-Signature-256": signature("main-app-secret", raw),
+      },
+      body: raw,
+    });
+    assert.equal(response.status, 500);
+    const listed = await request(server.base, "/api/events", { headers: session.authHeaders });
+    assert.equal(listed.status, 200);
+    assert.deepEqual(listed.body.events, []);
+  } finally {
+    await server.stop();
+  }
+});
+
+test("cascading app deletion restores every file when a batch rename fails", () => {
+  const dir = makeSandbox();
+  const store = require(path.join(dir, "dist", "store.js"));
+  const now = new Date().toISOString();
+  store.addApp({
+    id: "app-rollback", name: "Rollback", appId: "meta-rollback", appSecret: "secret", apiVersion: "v25.0",
+    wabaConfigId: "", messengerConfigId: "", instagramAppId: "", instagramAppSecret: "",
+    messengerFallbackToken: "", webhookVerifyToken: "", forwards: [], storeEvents: true, embedEnabled: false, createdAt: now,
+  });
+  store.upsertChannel({
+    id: "channel-rollback", appId: "app-rollback", type: "waba", name: "WA", externalId: "phone-rollback",
+    accessToken: "token", meta: {}, subscribed: true, createdAt: now,
+  });
+  store.addEvent({
+    id: "event-rollback", ts: now, appId: "app-rollback", appName: "Rollback", product: "waba",
+    externalId: "phone-rollback", channelId: "channel-rollback", kind: "message", direction: "in",
+    summary: "test", signatureValid: true, forwards: [], raw: {},
+  });
+  const dataDir = path.join(dir, "data");
+  const paths = ["apps.json", "channels.json", "events.json"].map((file) => path.join(dataDir, file));
+  const before = paths.map((file) => fs.readFileSync(file));
+  const originalRename = fs.renameSync;
+  let failed = false;
+  fs.renameSync = function failSecondRename(source, destination) {
+    if (!failed && String(destination).endsWith("channels.json")) {
+      failed = true;
+      const error = new Error("simulated batch failure");
+      error.code = "EACCES";
+      throw error;
+    }
+    return originalRename.call(this, source, destination);
+  };
+  try {
+    assert.throws(() => store.deleteApp("app-rollback"), /simulated batch failure/);
+  } finally {
+    fs.renameSync = originalRename;
+  }
+  assert.equal(store.findApp("app-rollback").id, "app-rollback");
+  assert.equal(store.findChannelById("channel-rollback").id, "channel-rollback");
+  assert.equal(store.listEvents()[0].id, "event-rollback");
+  paths.forEach((file, index) => assert.deepEqual(fs.readFileSync(file), before[index]));
+  assert.equal(fs.readdirSync(dataDir).some((file) => file.endsWith(".tmp") || file.endsWith(".rollback")), false);
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
 test("deleting an app cascades its channels and retained events", async () => {
   const dir = makeSandbox();
   const store = require(path.join(dir, "dist", "store.js"));
@@ -523,6 +648,29 @@ test("OAuth state is bound to its intended channel", async () => {
     });
     assert.equal(wrongExchange.status, 403);
     assert.equal(wrongExchange.body.error, "INVALID_STATE");
+  } finally {
+    await server.stop();
+  }
+});
+
+test("all app secret fields support the __clear__ sentinel", async () => {
+  const server = await startServer();
+  try {
+    const session = await login(server.base);
+    const created = await createApp(server, session.authHeaders, { messengerFallbackToken: "messenger-secret" });
+    const response = await request(server.base, `/api/apps/${created.body.app.id}`, {
+      method: "PUT",
+      headers: session.authHeaders,
+      body: {
+        appSecret: "__clear__",
+        instagramAppSecret: "__clear__",
+        messengerFallbackToken: "__clear__",
+      },
+    });
+    assert.equal(response.status, 200);
+    assert.equal(response.body.app.hasAppSecret, false);
+    assert.equal(response.body.app.hasInstagramAppSecret, false);
+    assert.equal(response.body.app.hasMessengerFallbackToken, false);
   } finally {
     await server.stop();
   }

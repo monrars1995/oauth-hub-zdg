@@ -150,7 +150,7 @@ function readJson<T>(file: string, fallback: T): T {
     const stored = JSON.parse(fs.readFileSync(full, "utf-8"));
     const needsMigration = containsLegacyPlaintext(file, stored);
     const decoded = transformSecrets(file, stored, false) as T;
-    if (needsMigration) queueMicrotask(() => writeJson(file, decoded, 0));
+    if (needsMigration) writeJson(file, decoded);
     return decoded;
   } catch (err) {
     console.error(`[store] could not safely read ${file}:`, err instanceof Error ? err.message : "unknown error");
@@ -158,23 +158,85 @@ function readJson<T>(file: string, fallback: T): T {
   }
 }
 
-const timers: Record<string, NodeJS.Timeout> = {};
-function writeJson(file: string, data: unknown, debounceMs = 300): void {
-  if (timers[file]) clearTimeout(timers[file]);
-  timers[file] = setTimeout(() => {
-    try {
-      ensureDir();
-      const full = path.join(DATA_DIR, file);
-      const tmp = full + ".tmp";
-      const persisted = transformSecrets(file, data, true);
-      fs.writeFileSync(tmp, JSON.stringify(persisted, null, 2), { encoding: "utf-8", mode: 0o600 });
-      try { fs.chmodSync(tmp, 0o600); } catch { /* best effort on non-POSIX filesystems */ }
-      fs.renameSync(tmp, full);
-      try { fs.chmodSync(full, 0o600); } catch { /* best effort on non-POSIX filesystems */ }
-    } catch (err) {
-      console.error(`[store] could not write ${file}:`, err);
+function serialized(file: string, data: unknown): string {
+  return JSON.stringify(transformSecrets(file, data, true), null, 2);
+}
+
+function tempPath(full: string, suffix = "tmp"): string {
+  return `${full}.${process.pid}.${crypto.randomBytes(6).toString("hex")}.${suffix}`;
+}
+
+function removeIfPresent(file: string): void {
+  try { fs.unlinkSync(file); } catch (error: any) { if (error?.code !== "ENOENT") throw error; }
+}
+
+function writeJson(file: string, data: unknown): void {
+  ensureDir();
+  const full = path.join(DATA_DIR, file);
+  const tmp = tempPath(full);
+  try {
+    fs.writeFileSync(tmp, serialized(file, data), { encoding: "utf-8", mode: 0o600 });
+    try { fs.chmodSync(tmp, 0o600); } catch { /* best effort on non-POSIX filesystems */ }
+    fs.renameSync(tmp, full);
+    try { fs.chmodSync(full, 0o600); } catch { /* best effort on non-POSIX filesystems */ }
+  } catch (error) {
+    try { removeIfPresent(tmp); } catch { /* retain original error */ }
+    throw error;
+  }
+}
+
+function writeJsonBatch(entries: Array<{ file: string; data: unknown }>): void {
+  ensureDir();
+  const prepared = entries.map(({ file, data }) => {
+    const full = path.join(DATA_DIR, file);
+    return {
+      file,
+      full,
+      tmp: tempPath(full),
+      previous: fs.existsSync(full) ? fs.readFileSync(full) : null,
+      content: serialized(file, data),
+    };
+  });
+
+  try {
+    for (const entry of prepared) {
+      fs.writeFileSync(entry.tmp, entry.content, { encoding: "utf-8", mode: 0o600 });
+      try { fs.chmodSync(entry.tmp, 0o600); } catch { /* best effort on non-POSIX filesystems */ }
     }
-  }, debounceMs);
+  } catch (error) {
+    for (const entry of prepared) try { removeIfPresent(entry.tmp); } catch { /* retain original error */ }
+    throw error;
+  }
+
+  const committed: typeof prepared = [];
+  try {
+    for (const entry of prepared) {
+      fs.renameSync(entry.tmp, entry.full);
+      try { fs.chmodSync(entry.full, 0o600); } catch { /* best effort on non-POSIX filesystems */ }
+      committed.push(entry);
+    }
+  } catch (error) {
+    const rollbackErrors: unknown[] = [];
+    for (const entry of [...committed].reverse()) {
+      try {
+        if (entry.previous === null) {
+          removeIfPresent(entry.full);
+        } else {
+          const rollback = tempPath(entry.full, "rollback");
+          fs.writeFileSync(rollback, entry.previous, { mode: 0o600 });
+          fs.renameSync(rollback, entry.full);
+          try { fs.chmodSync(entry.full, 0o600); } catch { /* best effort on non-POSIX filesystems */ }
+        }
+      } catch (rollbackError) {
+        rollbackErrors.push(rollbackError);
+      }
+    }
+    for (const entry of prepared) try { removeIfPresent(entry.tmp); } catch { /* retain original error */ }
+    if (rollbackErrors.length) {
+      throw new Error(`Store transaction failed and could not be fully rolled back: ${error instanceof Error ? error.message : "unknown error"}`);
+    }
+    throw error;
+  }
 }
 
 // ─── Settings (global, non-app) ───────────────────────────────────────────────
@@ -186,9 +248,10 @@ export function getSettings(): GlobalSettings {
   return settingsCache;
 }
 export function saveSettings(next: GlobalSettings): GlobalSettings {
-  settingsCache = { ...settingsCache, ...next, updatedAt: new Date().toISOString() };
-  writeJson("settings.json", settingsCache, 0);
-  return settingsCache;
+  const updated = { ...settingsCache, ...next, updatedAt: new Date().toISOString() };
+  writeJson("settings.json", updated);
+  settingsCache = updated;
+  return updated;
 }
 
 // ─── Apps ─────────────────────────────────────────────────────────────────────
@@ -202,26 +265,36 @@ export function findApp(id: string): MetaApp | undefined {
   return apps.find((a) => a.id === id);
 }
 export function addApp(app: MetaApp): MetaApp {
-  apps.push(app);
-  writeJson("apps.json", apps, 0);
+  const next = [...apps, app];
+  writeJson("apps.json", next);
+  apps = next;
   return app;
 }
 export function updateApp(id: string, patch: Partial<MetaApp>): MetaApp | undefined {
-  const a = findApp(id);
-  if (!a) return undefined;
-  Object.assign(a, patch, { id: a.id, createdAt: a.createdAt, updatedAt: new Date().toISOString() });
-  writeJson("apps.json", apps, 0);
-  return a;
+  const idx = apps.findIndex((app) => app.id === id);
+  if (idx < 0) return undefined;
+  const current = apps[idx];
+  const updated = { ...current, ...patch, id: current.id, createdAt: current.createdAt, updatedAt: new Date().toISOString() };
+  const next = [...apps];
+  next[idx] = updated;
+  writeJson("apps.json", next);
+  apps = next;
+  return updated;
 }
 export function deleteApp(id: string): boolean {
   const idx = apps.findIndex((a) => a.id === id);
   if (idx < 0) return false;
-  apps.splice(idx, 1);
-  channels = channels.filter((channel) => channel.appId !== id);
-  events = events.filter((event) => event.appId !== id);
-  writeJson("apps.json", apps, 0);
-  writeJson("channels.json", channels, 0);
-  writeJson("events.json", events, 0);
+  const nextApps = apps.filter((app) => app.id !== id);
+  const nextChannels = channels.filter((channel) => channel.appId !== id);
+  const nextEvents = events.filter((event) => event.appId !== id);
+  writeJsonBatch([
+    { file: "apps.json", data: nextApps },
+    { file: "channels.json", data: nextChannels },
+    { file: "events.json", data: nextEvents },
+  ]);
+  apps = nextApps;
+  channels = nextChannels;
+  events = nextEvents;
   return true;
 }
 
@@ -246,28 +319,37 @@ export function countChannelsByApp(appId: string): number {
 }
 export function upsertChannel(ch: Channel): Channel {
   const idx = channels.findIndex((c) => c.appId === ch.appId && c.externalId === ch.externalId && c.type === ch.type);
+  const next = [...channels];
+  let updated: Channel;
   if (idx >= 0) {
-    channels[idx] = { ...channels[idx], ...ch, id: channels[idx].id, createdAt: channels[idx].createdAt };
+    updated = { ...channels[idx], ...ch, id: channels[idx].id, createdAt: channels[idx].createdAt };
+    next[idx] = updated;
   } else {
-    channels.push(ch);
+    updated = ch;
+    next.push(ch);
   }
-  writeJson("channels.json", channels);
-  return channels.find((c) => c.appId === ch.appId && c.externalId === ch.externalId && c.type === ch.type)!;
+  writeJson("channels.json", next);
+  channels = next;
+  return updated;
 }
 export function deleteChannel(id: string): Channel | undefined {
   const idx = channels.findIndex((c) => c.id === id);
   if (idx < 0) return undefined;
-  const [removed] = channels.splice(idx, 1);
-  writeJson("channels.json", channels);
+  const removed = channels[idx];
+  const next = channels.filter((channel) => channel.id !== id);
+  writeJson("channels.json", next);
+  channels = next;
   return removed;
 }
 export function touchChannelEvent(externalId: string, appId?: string): Channel | undefined {
-  const ch = findChannelByExternalId(externalId, appId);
-  if (ch) {
-    ch.lastEventAt = new Date().toISOString();
-    writeJson("channels.json", channels);
-  }
-  return ch;
+  const idx = channels.findIndex((channel) => channel.externalId === externalId && (!appId || channel.appId === appId));
+  if (idx < 0) return undefined;
+  const updated = { ...channels[idx], lastEventAt: new Date().toISOString() };
+  const next = [...channels];
+  next[idx] = updated;
+  writeJson("channels.json", next);
+  channels = next;
+  return updated;
 }
 
 // ─── Events (ring buffer) ──────────────────────────────────────────────────────
@@ -276,26 +358,32 @@ const EVENTS_MAX = Math.max(50, Number(process.env.WEBHOOK_EVENTS_MAX) || 500);
 let events: WebhookEvent[] = readJson<WebhookEvent[]>("events.json", []).slice(-EVENTS_MAX);
 
 export function addEvent(ev: WebhookEvent): void {
-  events.push(ev);
-  if (events.length > EVENTS_MAX) events = events.slice(-EVENTS_MAX);
-  writeJson("events.json", events);
+  const next = [...events, ev].slice(-EVENTS_MAX);
+  writeJson("events.json", next);
+  events = next;
 }
 export function updateEvent(id: string, patch: Partial<WebhookEvent>): void {
-  const ev = events.find((e) => e.id === id);
-  if (!ev) return;
-  Object.assign(ev, patch);
-  writeJson("events.json", events);
+  const idx = events.findIndex((event) => event.id === id);
+  if (idx < 0) return;
+  const next = [...events];
+  next[idx] = { ...events[idx], ...patch };
+  writeJson("events.json", next);
+  events = next;
 }
 /** Update one forward-result entry of an event (used as async relays complete). */
 export function setEventForward(eventId: string, url: string, ok: boolean, status: number | string): void {
-  const ev = events.find((e) => e.id === eventId);
-  if (!ev) return;
-  const f = ev.forwards.find((x) => x.url === url && x.status === "pending") || ev.forwards.find((x) => x.url === url);
-  if (f) {
-    f.ok = ok;
-    f.status = status;
-    writeJson("events.json", events);
-  }
+  const eventIdx = events.findIndex((event) => event.id === eventId);
+  if (eventIdx < 0) return;
+  const event = events[eventIdx];
+  let forwardIdx = event.forwards.findIndex((forward) => forward.url === url && forward.status === "pending");
+  if (forwardIdx < 0) forwardIdx = event.forwards.findIndex((forward) => forward.url === url);
+  if (forwardIdx < 0) return;
+  const forwards = [...event.forwards];
+  forwards[forwardIdx] = { ...forwards[forwardIdx], ok, status };
+  const next = [...events];
+  next[eventIdx] = { ...event, forwards };
+  writeJson("events.json", next);
+  events = next;
 }
 export function listEvents(sinceTs?: string, limit = 100): WebhookEvent[] {
   let out = events;
@@ -303,8 +391,8 @@ export function listEvents(sinceTs?: string, limit = 100): WebhookEvent[] {
   return out.slice(-limit).reverse();
 }
 export function clearEvents(): void {
+  writeJson("events.json", []);
   events = [];
-  writeJson("events.json", events, 0);
 }
 
 /** Aggregate counts for the overview cards. */

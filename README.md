@@ -128,6 +128,12 @@ Coloque o serviço atrás de **HTTPS** — a Meta exige HTTPS para OAuth e webho
 - `channels.json` — canais conectados (inclui tokens).
 - `events.json` — últimas interações (ring de `WEBHOOK_EVENTS_MAX`).
 
+Campos sensíveis são gravados como envelopes AES-256-GCM. Cada mutação usa arquivo
+temporário + `rename`, só atualiza o cache após confirmação do disco e retorna erro HTTP
+se a persistência falhar. Exclusões em cascata preparam os três arquivos e restauram as
+versões anteriores quando um write/rename falha durante a operação. Ainda assim, mantenha
+o volume persistente e backups regulares para proteção contra falha física ou perda do host.
+
 ---
 
 ## Licença
