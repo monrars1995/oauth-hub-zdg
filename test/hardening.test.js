@@ -782,6 +782,22 @@ test("the dark visual system is matte, warm-neutral and keeps brand marks transp
   assert.match(legalStyles, /\.legal-brand img\s*\{[\s\S]*?background:\s*transparent;/);
 });
 
+test("the welcome screen is a responsive institutional manifesto with persistent panel access", () => {
+  const html = fs.readFileSync(path.join(ROOT, "public", "index.html"), "utf8");
+  const styles = fs.readFileSync(path.join(ROOT, "public", "styles.css"), "utf8");
+  const pt = JSON.parse(fs.readFileSync(path.join(ROOT, "locales", "pt.json"), "utf8"));
+
+  assert.match(html, /<header class="wc-masthead">[\s\S]*id="welcomeEnter"[\s\S]*<\/header>/);
+  assert.match(html, /<main class="wc-manifesto"[\s\S]*<\/main>/);
+  assert.match(html, /<footer class="wc-rail"[\s\S]*<\/footer>/);
+  assert.doesNotMatch(html, /class="welcome-card"/);
+  assert.match(styles, /\.welcome-shell\s*\{[^}]*max-width:\s*1240px/s);
+  assert.match(styles, /@media\s*\(max-width:\s*700px\)[\s\S]*\.wc-manifesto\s*\{[^}]*text-align:\s*left/s);
+  assert.equal(pt["welcome.title"], "Inteligência aplicada às conexões que movem sua operação.");
+  assert.match(pt["welcome.lead"], /WhatsApp Business, Messenger e Instagram/);
+  assert.equal(pt["welcome.foot"], "Integrações oficiais Meta");
+});
+
 test("visible application surfaces use only the @goldneuron.io brand", () => {
   const files = [
     "public/index.html",

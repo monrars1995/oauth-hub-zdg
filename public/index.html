@@ -87,23 +87,43 @@
 
   <!-- ── Welcome (initial screen) ──────────────────────────── -->
   <div id="welcome" class="welcome-wrap hidden">
-    <div class="welcome-card">
-      <a class="wc-logo" href="https://goldneuron.io/" target="_blank" rel="noopener" aria-label="@goldneuron.io"><img src="/assets/goldneuron_logo_mark.svg" alt="@goldneuron.io" /></a>
-      <h1 data-i18n="welcome.title">Inteligência operacional para o ecossistema Meta</h1>
-      <p class="wc-lead" data-i18n="welcome.lead">Conecte WhatsApp Business, Messenger e Instagram e acompanhe os webhooks em tempo real.</p>
-      <div class="wc-channels">
-        <span class="wc-ch"><img src="/assets/waba.png" alt="" /> WhatsApp</span>
-        <span class="wc-ch"><img src="/assets/messenger.png" alt="" /> Messenger</span>
-        <span class="wc-ch"><img src="/assets/instagram.png" alt="" /> Instagram</span>
-      </div>
-      <div class="wc-actions">
-        <a class="btn" id="welcomeSubscribe" href="https://goldneuron.io/" target="_blank" rel="noopener">
-          <span data-i18n="welcome.subscribe">Conheça @goldneuron.io</span>
+    <div class="welcome-shell">
+      <header class="wc-masthead">
+        <a class="wc-brand" href="https://goldneuron.io/" target="_blank" rel="noopener">
+          <span class="wc-logo"><img src="/assets/goldneuron_logo_mark.svg" alt="" /></span>
+          <span class="wc-brand-copy">
+            <strong>Meta AppHub</strong>
+            <span class="wc-brand-sub" data-i18n="side.by">by @goldneuron.io</span>
+          </span>
         </a>
-        <a class="btn secondary" href="https://neuros.codes/" target="_blank" rel="noopener" data-i18n="welcome.knowZpro">Conheça a NeurOS</a>
-      </div>
-      <button class="wc-enter" id="welcomeEnter" type="button"><span data-i18n="welcome.enter">Acessar o painel</span> <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></button>
-      <div class="wc-foot"><a href="https://goldneuron.io/" target="_blank" rel="noopener" data-i18n="welcome.foot">by @goldneuron.io</a></div>
+        <button class="btn secondary wc-access" id="welcomeEnter" type="button">
+          <span data-i18n="welcome.enter">Acessar o painel</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </button>
+      </header>
+
+      <main class="wc-manifesto" aria-labelledby="welcomeTitle">
+        <a class="wc-symbol" href="https://goldneuron.io/" target="_blank" rel="noopener" aria-label="@goldneuron.io">
+          <img src="/assets/goldneuron_logo_mark.svg" alt="" />
+        </a>
+        <h1 id="welcomeTitle" data-i18n="welcome.title">Inteligência aplicada às conexões que movem sua operação.</h1>
+        <p class="wc-lead" data-i18n="welcome.lead">O Meta AppHub conecta WhatsApp Business, Messenger e Instagram à infraestrutura da @goldneuron.io e à inteligência operacional da NeurOS.</p>
+        <div class="wc-actions">
+          <a class="btn" id="welcomeSubscribe" href="https://goldneuron.io/" target="_blank" rel="noopener">
+            <span data-i18n="welcome.subscribe">Conheça @goldneuron.io</span>
+          </a>
+          <a class="btn secondary" href="https://neuros.codes/" target="_blank" rel="noopener" data-i18n="welcome.knowZpro">Conheça a NeurOS</a>
+        </div>
+      </main>
+
+      <footer class="wc-rail" aria-label="Integrações oficiais Meta">
+        <span class="wc-rail-title" data-i18n="welcome.foot">Integrações oficiais Meta</span>
+        <div class="wc-channels">
+          <span class="wc-ch"><img src="/assets/waba.png" alt="" /> WhatsApp</span>
+          <span class="wc-ch"><img src="/assets/messenger.png" alt="" /> Messenger</span>
+          <span class="wc-ch"><img src="/assets/instagram.png" alt="" /> Instagram</span>
+        </div>
+      </footer>
     </div>
   </div>
 

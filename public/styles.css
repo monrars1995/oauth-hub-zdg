@@ -326,31 +326,61 @@ textarea:focus-visible, [tabindex]:focus-visible {
 }
 
 /* ── Welcome (initial screen) ─────────────────────────────────────────────── */
-.welcome-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1.25rem; position: relative; overflow: hidden; background: var(--bg); }
-.welcome-wrap::before, .welcome-wrap::after { display: none; }
-.welcome-card {
-  position: relative; z-index: 1; width: 100%; max-width: 540px; text-align: center;
-  background: var(--surface);
-  border: 1px solid var(--border-strong); border-radius: var(--r-xl); box-shadow: none;
-  padding: 2.5rem 2.2rem;
-}
-.wc-logo { width: 62px; height: 62px; border-radius: 0; padding: 0; background: transparent; border: 0; box-shadow: none; display: inline-flex; margin-bottom: 1.1rem; }
+.welcome-wrap { min-height: 100svh; display: flex; align-items: center; justify-content: center; padding: clamp(1.25rem, 3vw, 3.25rem); background: var(--bg); }
+.welcome-shell { width: 100%; max-width: 1240px; min-height: min(760px, calc(100svh - 2.5rem)); display: flex; flex-direction: column; }
+.wc-masthead { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .25rem 0 1.2rem; border-bottom: 1px solid var(--border); }
+.wc-brand { display: inline-flex; align-items: center; gap: .75rem; min-width: 0; color: var(--text); text-decoration: none; }
+.wc-brand:hover { color: var(--signal-ink); text-decoration: none; }
+.wc-logo { width: 42px; height: 42px; flex: 0 0 42px; border-radius: 0; padding: 0; background: transparent; border: 0; box-shadow: none; display: inline-flex; }
 .wc-logo img { width: 100%; height: 100%; object-fit: contain; }
-.welcome-card h1 { font-size: 1.6rem; font-weight: 800; letter-spacing: -.03em; line-height: 1.15; margin-bottom: .7rem; }
-.wc-lead { font-size: .92rem; color: var(--muted); line-height: 1.6; max-width: 44ch; margin: 0 auto 1.3rem; }
-.wc-channels { display: flex; flex-wrap: wrap; gap: .5rem; justify-content: center; margin-bottom: 1.5rem; }
-.wc-ch { display: inline-flex; align-items: center; gap: .4rem; font-size: .8rem; font-weight: 600; color: var(--text-2); background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--pill); padding: .34rem .72rem; }
-.wc-ch img { width: 16px; height: 16px; object-fit: contain; }
-.wc-actions { display: flex; gap: .6rem; justify-content: center; flex-wrap: wrap; margin-bottom: 1rem; }
+.wc-brand-copy { display: flex; flex-direction: column; min-width: 0; }
+.wc-brand-copy strong { font-size: .95rem; line-height: 1.25; letter-spacing: -.02em; }
+.wc-brand-sub { margin-top: .08rem; color: var(--muted-2); font-size: .69rem; }
+.wc-access { min-height: 44px; padding-inline: .9rem; }
+.wc-access svg { width: 16px; height: 16px; }
+.wc-manifesto { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; max-width: 900px; margin: 0 auto; padding: clamp(3.5rem, 8vh, 6.5rem) 1rem; text-align: center; }
+.wc-symbol { width: 76px; height: 76px; display: inline-flex; margin-bottom: 1.75rem; }
+.wc-symbol img { width: 100%; height: 100%; object-fit: contain; }
+.wc-manifesto h1 { max-width: 18ch; margin-bottom: 1.4rem; font-size: clamp(2.7rem, 5vw, 4.8rem); font-weight: 800; letter-spacing: -.04em; line-height: 1.02; text-wrap: balance; }
+.wc-lead { max-width: 68ch; margin: 0 auto 2rem; color: var(--muted); font-size: clamp(1rem, 1.4vw, 1.15rem); line-height: 1.7; text-wrap: pretty; }
+.wc-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: .7rem; }
 .wc-actions .btn { text-decoration: none; }
-.btn.yt { background: #df2020; color: #fff; box-shadow: none; }
-.btn.yt:hover { background: #c91c1c; text-decoration: none; }
-.btn.yt svg { width: 17px; height: 17px; }
-.wc-enter { background: none; border: none; color: var(--muted); font-weight: 650; font-size: .86rem; cursor: pointer; padding: .5rem .6rem; display: inline-flex; align-items: center; gap: .35rem; border-radius: var(--r-sm); transition: color .15s, background .15s; }
-.wc-enter svg { width: 15px; height: 15px; }
-.wc-enter:hover { color: var(--text); background: var(--surface-2); }
-.wc-foot { margin-top: 1rem; font-size: .76rem; color: var(--muted-2); }
-.wc-foot a { font-weight: 700; }
+.wc-actions .btn { min-height: 48px; padding-inline: 1.2rem; }
+.wc-rail { display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; padding: 1.15rem 0 .25rem; border-top: 1px solid var(--border); }
+.wc-rail-title { color: var(--muted-2); font-size: .76rem; font-weight: 650; }
+.wc-channels { display: flex; flex-wrap: wrap; align-items: center; gap: 1.2rem; }
+.wc-ch { display: inline-flex; align-items: center; gap: .42rem; color: var(--text-2); font-size: .78rem; font-weight: 600; }
+.wc-ch img { width: 17px; height: 17px; object-fit: contain; }
+
+@media (min-width: 701px) and (max-height: 700px) {
+  .welcome-wrap { padding-block: 1rem; }
+  .welcome-shell { min-height: calc(100svh - 2rem); }
+  .wc-manifesto { padding-block: 2rem; }
+  .wc-symbol { width: 58px; height: 58px; margin-bottom: 1.1rem; }
+  .wc-manifesto h1 { max-width: 21ch; margin-bottom: 1rem; font-size: clamp(2.5rem, 5.5vw, 3.6rem); }
+  .wc-lead { margin-bottom: 1.4rem; }
+}
+
+@media (max-width: 700px) {
+  .welcome-wrap { align-items: flex-start; padding: 1rem; }
+  .welcome-shell { min-height: calc(100svh - 2rem); }
+  .wc-masthead { padding-bottom: 1rem; }
+  .wc-logo { width: 38px; height: 38px; flex-basis: 38px; }
+  .wc-access { min-height: 42px; padding-inline: .75rem; font-size: .78rem; }
+  .wc-manifesto { align-items: flex-start; padding: 3.5rem 0 3rem; text-align: left; }
+  .wc-symbol { width: 64px; height: 64px; margin-bottom: 1.4rem; }
+  .wc-manifesto h1 { max-width: 13ch; margin-bottom: 1.15rem; font-size: clamp(2.35rem, 11vw, 3.35rem); line-height: 1.04; }
+  .wc-lead { max-width: 40ch; margin: 0 0 1.75rem; font-size: .96rem; line-height: 1.65; }
+  .wc-actions { width: 100%; flex-direction: column; }
+  .wc-actions .btn { width: 100%; }
+  .wc-rail { align-items: flex-start; flex-direction: column; gap: .8rem; }
+  .wc-channels { gap: .75rem 1rem; }
+}
+
+@media (max-width: 420px) {
+  .wc-brand-sub { display: none; }
+  .wc-manifesto { padding-top: 2.75rem; }
+}
 
 /* ── App shell ────────────────────────────────────────────────────────────── */
 .layout { display: flex; min-height: 100vh; }
