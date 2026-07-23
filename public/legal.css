@@ -33,10 +33,10 @@
 .legal-brand img {
   width: 38px;
   height: 38px;
-  padding: 4px;
-  border: 1px solid #4a3817;
-  border-radius: 10px;
-  background: #090b10;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
 }
 .legal-brand strong { display: block; font-size: .9rem; letter-spacing: -.015em; }
 .legal-brand span { display: block; margin-top: 1px; color: #6a7180; font-size: .67rem; }

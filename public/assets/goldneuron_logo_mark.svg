@@ -15,17 +15,6 @@
     <stop offset="52%" stop-color="#E6A814"/>
     <stop offset="100%" stop-color="#B97900"/>
   </linearGradient>
-  <filter id="softGlow" x="-35%" y="-35%" width="170%" height="170%" color-interpolation-filters="sRGB">
-    <feGaussianBlur in="SourceGraphic" stdDeviation="9" result="blur"/>
-    <feColorMatrix in="blur" type="matrix" values="1 0 0 0 1  0 0.74 0 0 0.56  0 0 0.20 0 0.08  0 0 0 0.85 0" result="glow"/>
-    <feMerge>
-      <feMergeNode in="glow"/>
-      <feMergeNode in="SourceGraphic"/>
-    </feMerge>
-  </filter>
-  <filter id="softShadow" x="-25%" y="-25%" width="150%" height="150%" color-interpolation-filters="sRGB">
-    <feDropShadow dx="0" dy="7" stdDeviation="6" flood-color="#000000" flood-opacity="0.20"/>
-  </filter>
 </defs>
 
 <g id="goldneuron-bulb-neural-mark" fill="none" stroke="url(#goldStroke)" stroke-linecap="round" stroke-linejoin="round">

@@ -2,25 +2,30 @@
 
 ## Direção visual
 
-Dashboard dark-first para operação técnica, com neutros profundos e acento dourado inspirado no logotipo oficial da @goldneuron.io. A identidade deve ser reconhecível sem prejudicar leitura, estados semânticos ou cores próprias dos canais Meta.
+Dashboard dark-first para operação técnica, com superfícies foscas em preto marrom acinzentado e acento dourado inspirado no logotipo oficial da @goldneuron.io. A identidade deve ser reconhecível sem prejudicar leitura, estados semânticos ou cores próprias dos canais Meta.
+
+A estratégia é restrita: neutros dominam a interface e o dourado aparece apenas em ações primárias, foco, seleção e informações que exigem atenção. Profundidade vem da luminosidade entre superfícies e de bordas completas, nunca de brilho.
 
 ## Tokens principais
 
 | Papel | Claro | Escuro |
 |---|---|---|
-| Fundo | `#F5F5F6` | `#07090F` |
-| Superfície | `#FFFFFF` | `#11141D` |
-| Texto | `#111217` | `#F2F0E9` |
-| Muted | `#5F6470` | `#A2A7B2` |
-| Acento gold | `#B77900` | `#F2B930` |
-| Acento hover | `#8F5B00` | `#D99A04` |
-| Acento soft | `#FFF6DF` | `#2B210E` |
-| Foco | `rgba(183,121,0,.42)` | `rgba(242,185,48,.42)` |
+| Fundo | `#F3F4F7` | `oklch(13% .008 55)` |
+| Superfície | `#FFFFFF` | `oklch(18% .010 55)` |
+| Superfície secundária | `#F4F5F9` | `oklch(16% .009 55)` |
+| Texto | `#0A0D15` | `oklch(93% .008 75)` |
+| Muted | `#5B6473` | `oklch(67% .010 65)` |
+| Acento gold | `#B77900` | `oklch(74% .145 78)` |
+| Acento hover | `#8F5B00` | `oklch(63% .130 72)` |
+| Acento soft | `#FFF6DF` | `oklch(24% .030 72)` |
+| Foco | `rgba(183,121,0,.42)` | `oklch(74% .145 78 / .58)` |
 
 - Botão gold em tema claro usa fundo escuro `#956000` com texto branco.
-- Botão gold em tema escuro usa fundo `#9C6100` com texto branco.
+- Botão gold em tema escuro usa fundo `oklch(55% .120 70)` com texto branco.
 - Verde permanece reservado para sucesso; vermelho para erro; azul para informação.
 - WhatsApp, Messenger e Instagram preservam suas cores de produto.
+- Não usar glows, halos pulsantes, blur decorativo, glassmorphism ou gradientes ornamentais.
+- No tema escuro, elevação é indicada por superfícies progressivamente mais claras e bordas, sem sombras visíveis.
 
 ## Tipografia e componentes
 
@@ -35,7 +40,8 @@ Dashboard dark-first para operação técnica, com neutros profundos e acento do
 - Arquivo local, sem carregamento remoto em runtime.
 - Fundo transparente.
 - Usar o símbolo completo em login, boas-vindas, sidebar e favicon.
-- Em fundos claros, manter uma base escura discreta para preservar contraste das linhas douradas.
+- Nunca aplicar badge, moldura, sombra ou fundo preto atrás do símbolo.
+- Em fundos claros, preservar espaço livre ao redor e aumentar o símbolo quando necessário, sem criar uma base de contraste.
 - Alt text: `@goldneuron.io`.
 
 ## Conteúdo e atribuição

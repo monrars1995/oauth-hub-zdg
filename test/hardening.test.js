@@ -762,6 +762,26 @@ test("the authentication page exposes accessible public legal links", async () =
   }
 });
 
+test("the dark visual system is matte, warm-neutral and keeps brand marks transparent", () => {
+  const styles = fs.readFileSync(path.join(ROOT, "public", "styles.css"), "utf8");
+  const legalStyles = fs.readFileSync(path.join(ROOT, "public", "legal.css"), "utf8");
+  const logo = fs.readFileSync(path.join(ROOT, "public", "assets", "goldneuron_logo_mark.svg"), "utf8");
+
+  assert.match(styles, /:root\[data-theme="dark"\][\s\S]*--bg:\s*oklch\([^)]*\s55\)/);
+  assert.doesNotMatch(styles, /#07090f|#11141d|#0b0e15/i);
+  assert.doesNotMatch(styles, /radial-gradient|backdrop-filter|filter:\s*blur|\bglow\b/i);
+  assert.match(styles, /html\s*\{[^}]*min-height:\s*100%/s);
+  assert.match(styles, /body\s*\{[^}]*min-height:\s*100vh/s);
+  assert.doesNotMatch(styles, /html\s*,\s*body\s*\{[^}]*height:\s*100%/s);
+  assert.doesNotMatch(logo, /softGlow|feGaussianBlur|feDropShadow/i);
+
+  assert.match(styles, /\.login-logo\s*\{[\s\S]*?background:\s*transparent;/);
+  assert.match(styles, /\.wc-logo\s*\{[\s\S]*?background:\s*transparent;/);
+  assert.match(styles, /\.side-brand \.logo\s*\{[\s\S]*?background:\s*transparent;/);
+  assert.match(styles, /\.brand-mark\s*\{[\s\S]*?background:\s*transparent;/);
+  assert.match(legalStyles, /\.legal-brand img\s*\{[\s\S]*?background:\s*transparent;/);
+});
+
 test("visible application surfaces use only the @goldneuron.io brand", () => {
   const files = [
     "public/index.html",

@@ -25,7 +25,7 @@
   "events.paused": "paused",
   "events.sound": "Sound on new event",
   "events.volHour": "{n} in the last hour",
-  "overview.activity": "Activity — last hour",
+  "overview.activity": "Activity · last hour",
   "overview.mix": "Channel mix",
   "overview.recent": "Recent interactions",
   "overview.seeConsole": "Open console →",
