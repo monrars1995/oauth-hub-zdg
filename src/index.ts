@@ -270,7 +270,10 @@ app.post("/api/apps", apiLimiter, requireAdmin, (req: Request, res: Response) =>
   const appId = typeof b.appId === "string" ? b.appId.trim() : "";
   if (!name) return res.status(400).json({ error: "NAME_REQUIRED" });
   if (!appId) return res.status(400).json({ error: "APP_ID_REQUIRED" });
-  const apiVersionInput = (typeof b.apiVersion === "string" && b.apiVersion.trim()) || DEFAULT_API_VERSION;
+  const apiVersionProvided = Object.prototype.hasOwnProperty.call(b, "apiVersion");
+  const apiVersionInput = !apiVersionProvided || (typeof b.apiVersion === "string" && !b.apiVersion.trim())
+    ? DEFAULT_API_VERSION
+    : b.apiVersion;
   const apiVersion = normalizeMetaApiVersion(apiVersionInput);
   if (!apiVersion) return res.status(400).json({ error: "INVALID_API_VERSION" });
   let forwards: ForwardDest[];
@@ -309,8 +312,11 @@ app.put("/api/apps/:id", apiLimiter, requireAdmin, (req: Request, res: Response)
   const patch: Partial<MetaApp> = {};
   if (typeof b.name === "string" && b.name.trim()) patch.name = b.name.trim();
   if (typeof b.appId === "string" && b.appId.trim()) patch.appId = b.appId.trim();
-  if (typeof b.apiVersion === "string") {
-    const apiVersion = normalizeMetaApiVersion(b.apiVersion.trim() || DEFAULT_API_VERSION);
+  if (Object.prototype.hasOwnProperty.call(b, "apiVersion")) {
+    const apiVersionInput = typeof b.apiVersion === "string" && !b.apiVersion.trim()
+      ? DEFAULT_API_VERSION
+      : b.apiVersion;
+    const apiVersion = normalizeMetaApiVersion(apiVersionInput);
     if (!apiVersion) return res.status(400).json({ error: "INVALID_API_VERSION" });
     patch.apiVersion = apiVersion;
   }

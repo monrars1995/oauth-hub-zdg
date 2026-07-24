@@ -751,9 +751,32 @@ test("Meta signup pages allow only the SDK dependencies they need and serve the 
     assert.match(favicon.text, /<svg\b/);
     assert.doesNotMatch(favicon.text, /<script\b|on[a-z]+\s*=|<foreignObject\b/i);
 
-    const invalid = await createApp(server, session.authHeaders, { apiVersion: "v25.1" });
-    assert.equal(invalid.status, 400);
-    assert.equal(invalid.body.error, "INVALID_API_VERSION");
+    for (const apiVersion of ["v25.1", 25.1, null, {}, true]) {
+      const invalid = await createApp(server, session.authHeaders, { apiVersion });
+      assert.equal(invalid.status, 400);
+      assert.equal(invalid.body.error, "INVALID_API_VERSION");
+    }
+
+    const numeric = await createApp(server, session.authHeaders, { apiVersion: 24 });
+    assert.equal(numeric.status, 200);
+    assert.equal(numeric.body.app.apiVersion, "v24.0");
+    const numericUpdate = await request(server.base, `/api/apps/${numeric.body.app.id}`, {
+      method: "PUT",
+      headers: session.authHeaders,
+      body: { apiVersion: 25 },
+    });
+    assert.equal(numericUpdate.status, 200);
+    assert.equal(numericUpdate.body.app.apiVersion, "v25.0");
+
+    for (const apiVersion of [25.1, null, {}, true]) {
+      const invalidUpdate = await request(server.base, `/api/apps/${numeric.body.app.id}`, {
+        method: "PUT",
+        headers: session.authHeaders,
+        body: { apiVersion },
+      });
+      assert.equal(invalidUpdate.status, 400);
+      assert.equal(invalidUpdate.body.error, "INVALID_API_VERSION");
+    }
   } finally {
     await server.stop();
   }
