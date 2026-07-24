@@ -68,6 +68,31 @@ import { postSafeForwardUrl, UnsafeForwardUrlError, validateForwardUrl } from ".
 
 const app = express();
 
+function contentSecurityPolicy(allowMetaSdk = false): string {
+  const directives = [
+    "default-src 'self'",
+    "base-uri 'self'",
+    "object-src 'none'",
+    "frame-ancestors 'self'",
+    "form-action 'self'",
+    allowMetaSdk
+      ? "script-src 'self' 'unsafe-inline' https://connect.facebook.net"
+      : "script-src 'self' 'unsafe-inline'",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "font-src 'self' https://fonts.gstatic.com",
+    allowMetaSdk
+      ? "img-src 'self' data: https://www.facebook.com https://static.xx.fbcdn.net"
+      : "img-src 'self' data:",
+    allowMetaSdk
+      ? "connect-src 'self' https://www.facebook.com https://graph.facebook.com"
+      : "connect-src 'self'",
+  ];
+  if (allowMetaSdk) {
+    directives.push("frame-src https://www.facebook.com https://web.facebook.com https://business.facebook.com");
+  }
+  return directives.join("; ");
+}
+
 app.use(
   express.json({
     limit: "2mb",
@@ -84,21 +109,7 @@ app.use((req: Request, res: Response, next) => {
   res.setHeader("Referrer-Policy", "same-origin");
   res.setHeader("X-Frame-Options", "SAMEORIGIN");
   res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
-  res.setHeader(
-    "Content-Security-Policy",
-    [
-      "default-src 'self'",
-      "base-uri 'self'",
-      "object-src 'none'",
-      "frame-ancestors 'self'",
-      "form-action 'self'",
-      "script-src 'self' 'unsafe-inline'",
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-      "font-src 'self' https://fonts.gstatic.com",
-      "img-src 'self' data:",
-      "connect-src 'self'",
-    ].join("; ")
-  );
+  res.setHeader("Content-Security-Policy", contentSecurityPolicy());
   if (IS_PRODUCTION) res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
   const origin = req.headers.origin;
   if (origin && !isAllowedBrowserOrigin(origin)) {
@@ -129,12 +140,13 @@ function toPublicChannel(c: Channel): ChannelPublic {
   return { ...rest, appName: store.findApp(c.appId)?.name || "(app removido)" };
 }
 
-function serveTemplate(res: Response, file: string, replacements: Record<string, string>): void {
+function serveTemplate(res: Response, file: string, replacements: Record<string, string>, allowMetaSdk = false): void {
   try {
     let html = fs.readFileSync(path.join(__dirname, "..", "public", file), "utf-8");
     for (const key of Object.keys(replacements)) {
       html = html.replace(new RegExp(`\\{\\{${key}\\}\\}`, "g"), () => replacements[key]);
     }
+    if (allowMetaSdk) res.setHeader("Content-Security-Policy", contentSecurityPolicy(true));
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     res.send(html);
   } catch {
@@ -506,7 +518,7 @@ app.get("/connect/waba", (req: Request, res: Response) => {
     STATE: String(req.query.state || ""),
     BRAND_NAME: htmlEscape(getBrand()),
     LANG: lang,
-  });
+  }, true);
 });
 
 app.get("/connect/messenger", (req: Request, res: Response) => {
@@ -520,7 +532,7 @@ app.get("/connect/messenger", (req: Request, res: Response) => {
     STATE: String(req.query.state || ""),
     BRAND_NAME: htmlEscape(getBrand()),
     LANG: lang,
-  });
+  }, true);
 });
 
 app.get("/connect/instagram", (req: Request, res: Response) => {
@@ -972,6 +984,10 @@ const legalDocuments: Record<string, string> = {
 app.get(Object.keys(legalDocuments), (req: Request, res: Response) => {
   res.setHeader("Cache-Control", "public, max-age=300");
   res.sendFile(path.join(publicDir, legalDocuments[req.path]));
+});
+app.get("/favicon.ico", (_req: Request, res: Response) => {
+  res.setHeader("Cache-Control", "public, max-age=86400");
+  res.type("image/svg+xml").sendFile(path.join(publicDir, "assets", "goldneuron_logo_mark.svg"));
 });
 app.use(express.static(publicDir));
 app.get("/", (_req: Request, res: Response) => res.sendFile(path.join(publicDir, "index.html")));

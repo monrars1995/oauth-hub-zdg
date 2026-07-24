@@ -711,6 +711,47 @@ test("OAuth state is bound to its intended channel", async () => {
   }
 });
 
+test("Meta signup pages allow only the SDK dependencies they need and serve the official favicon", async () => {
+  const server = await startServer();
+  try {
+    const session = await login(server.base);
+    const created = await createApp(server, session.authHeaders, {
+      wabaConfigId: "waba-config",
+      messengerConfigId: "messenger-config",
+    });
+    assert.equal(created.status, 200);
+
+    for (const channel of ["waba", "messenger"]) {
+      const initialized = await request(server.base, `/api/connect/${channel}/init`, {
+        method: "POST",
+        headers: session.authHeaders,
+        body: { appId: created.body.app.id, lang: "pt" },
+      });
+      assert.equal(initialized.status, 200);
+      const signupUrl = new URL(initialized.body.url);
+      const page = await request(server.base, signupUrl.pathname + signupUrl.search);
+      assert.equal(page.status, 200);
+      assert.match(page.text, /https:\/\/connect\.facebook\.net\/en_US\/sdk\.js/);
+      const csp = page.headers.get("content-security-policy") || "";
+      assert.match(csp, /script-src 'self' 'unsafe-inline' https:\/\/connect\.facebook\.net/);
+      assert.match(csp, /frame-src https:\/\/www\.facebook\.com https:\/\/web\.facebook\.com https:\/\/business\.facebook\.com/);
+      assert.match(csp, /connect-src 'self' https:\/\/www\.facebook\.com https:\/\/graph\.facebook\.com/);
+      assert.match(csp, /img-src 'self' data: https:\/\/www\.facebook\.com https:\/\/static\.xx\.fbcdn\.net/);
+    }
+
+    const panel = await request(server.base, "/");
+    assert.doesNotMatch(panel.headers.get("content-security-policy") || "", /facebook\.com|facebook\.net|fbcdn\.net/);
+
+    const favicon = await request(server.base, "/favicon.ico");
+    assert.equal(favicon.status, 200);
+    assert.match(favicon.headers.get("content-type") || "", /image\/svg\+xml/);
+    assert.match(favicon.text, /<svg\b/);
+    assert.doesNotMatch(favicon.text, /<script\b|on[a-z]+\s*=|<foreignObject\b/i);
+  } finally {
+    await server.stop();
+  }
+});
+
 test("all app secret fields support the __clear__ sentinel", async () => {
   const server = await startServer();
   try {
