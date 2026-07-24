@@ -24,6 +24,7 @@ import fs from "fs";
 import path from "path";
 import crypto from "crypto";
 import { Channel, MetaApp, WebhookEvent } from "./types";
+import { resolveMetaApiVersion } from "./meta-version";
 
 export const DATA_DIR = path.join(__dirname, "..", "data");
 const ENCRYPTED_PREFIX = "enc:v1:";
@@ -256,7 +257,10 @@ export function saveSettings(next: GlobalSettings): GlobalSettings {
 
 // ─── Apps ─────────────────────────────────────────────────────────────────────
 
-let apps: MetaApp[] = readJson<MetaApp[]>("apps.json", []);
+let apps: MetaApp[] = readJson<MetaApp[]>("apps.json", []).map((app) => ({
+  ...app,
+  apiVersion: resolveMetaApiVersion(app.apiVersion),
+}));
 
 export function listApps(): MetaApp[] {
   return apps;
@@ -265,16 +269,24 @@ export function findApp(id: string): MetaApp | undefined {
   return apps.find((a) => a.id === id);
 }
 export function addApp(app: MetaApp): MetaApp {
-  const next = [...apps, app];
+  const normalized = { ...app, apiVersion: resolveMetaApiVersion(app.apiVersion) };
+  const next = [...apps, normalized];
   writeJson("apps.json", next);
   apps = next;
-  return app;
+  return normalized;
 }
 export function updateApp(id: string, patch: Partial<MetaApp>): MetaApp | undefined {
   const idx = apps.findIndex((app) => app.id === id);
   if (idx < 0) return undefined;
   const current = apps[idx];
-  const updated = { ...current, ...patch, id: current.id, createdAt: current.createdAt, updatedAt: new Date().toISOString() };
+  const updated = {
+    ...current,
+    ...patch,
+    apiVersion: resolveMetaApiVersion(patch.apiVersion ?? current.apiVersion),
+    id: current.id,
+    createdAt: current.createdAt,
+    updatedAt: new Date().toISOString(),
+  };
   const next = [...apps];
   next[idx] = updated;
   writeJson("apps.json", next);

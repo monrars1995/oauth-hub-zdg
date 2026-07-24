@@ -716,10 +716,12 @@ test("Meta signup pages allow only the SDK dependencies they need and serve the 
   try {
     const session = await login(server.base);
     const created = await createApp(server, session.authHeaders, {
+      apiVersion: "25",
       wabaConfigId: "waba-config",
       messengerConfigId: "messenger-config",
     });
     assert.equal(created.status, 200);
+    assert.equal(created.body.app.apiVersion, "v25.0");
 
     for (const channel of ["waba", "messenger"]) {
       const initialized = await request(server.base, `/api/connect/${channel}/init`, {
@@ -732,6 +734,7 @@ test("Meta signup pages allow only the SDK dependencies they need and serve the 
       const page = await request(server.base, signupUrl.pathname + signupUrl.search);
       assert.equal(page.status, 200);
       assert.match(page.text, /https:\/\/connect\.facebook\.net\/en_US\/sdk\.js/);
+      assert.match(page.text, /var API_VERSION\s*=\s*'v25\.0'/);
       const csp = page.headers.get("content-security-policy") || "";
       assert.match(csp, /script-src 'self' 'unsafe-inline' https:\/\/connect\.facebook\.net/);
       assert.match(csp, /frame-src https:\/\/www\.facebook\.com https:\/\/web\.facebook\.com https:\/\/business\.facebook\.com/);
@@ -747,8 +750,44 @@ test("Meta signup pages allow only the SDK dependencies they need and serve the 
     assert.match(favicon.headers.get("content-type") || "", /image\/svg\+xml/);
     assert.match(favicon.text, /<svg\b/);
     assert.doesNotMatch(favicon.text, /<script\b|on[a-z]+\s*=|<foreignObject\b/i);
+
+    const invalid = await createApp(server, session.authHeaders, { apiVersion: "v25.1" });
+    assert.equal(invalid.status, 400);
+    assert.equal(invalid.body.error, "INVALID_API_VERSION");
   } finally {
     await server.stop();
+  }
+});
+
+test("legacy Graph API versions are canonicalized in memory without rewriting stored app data", () => {
+  const dir = makeSandbox();
+  const dataDir = path.join(dir, "data");
+  fs.mkdirSync(dataDir, { recursive: true });
+  const app = {
+    id: "legacy-version",
+    name: "Legacy version",
+    appId: "meta-legacy-version",
+    appSecret: "",
+    apiVersion: "25",
+    wabaConfigId: "",
+    messengerConfigId: "",
+    instagramAppId: "",
+    instagramAppSecret: "",
+    messengerFallbackToken: "",
+    webhookVerifyToken: "",
+    forwards: [],
+    storeEvents: true,
+    embedEnabled: false,
+    createdAt: new Date().toISOString(),
+  };
+  const appsFile = path.join(dataDir, "apps.json");
+  fs.writeFileSync(appsFile, JSON.stringify([app], null, 2));
+  try {
+    const store = require(path.join(dir, "dist", "store.js"));
+    assert.equal(store.listApps()[0].apiVersion, "v25.0");
+    assert.equal(JSON.parse(fs.readFileSync(appsFile, "utf8"))[0].apiVersion, "25");
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
   }
 });
 
@@ -1004,7 +1043,9 @@ test("visible application surfaces use only the @goldneuron.io brand", () => {
 
 test("the default Graph API target is v25.0", () => {
   const config = fs.readFileSync(path.join(ROOT, "src", "config.ts"), "utf8");
+  const metaVersion = fs.readFileSync(path.join(ROOT, "src", "meta-version.ts"), "utf8");
   const envExample = fs.readFileSync(path.join(ROOT, ".env.example"), "utf8");
-  assert.match(config, /DEFAULT_API_VERSION[\s\S]*"v25\.0"/);
+  assert.match(metaVersion, /FALLBACK_META_API_VERSION\s*=\s*"v25\.0"/);
+  assert.match(config, /DEFAULT_API_VERSION\s*=\s*resolveMetaApiVersion/);
   assert.match(envExample, /META_API_VERSION=v25\.0/);
 });

@@ -26,6 +26,7 @@ import path from "path";
 import { getSettings, listApps, addApp, DATA_DIR } from "./store";
 import { MetaApp, MetaAppPublic } from "./types";
 import * as store from "./store";
+import { FALLBACK_META_API_VERSION, resolveMetaApiVersion } from "./meta-version";
 
 function env(name: string): string {
   const direct = (process.env[name] || "").trim();
@@ -45,7 +46,7 @@ export const PORT = Number(env("PORT")) || 3300;
 export const PUBLIC_URL = (env("PUBLIC_URL") || `http://localhost:${PORT}`).replace(/\/$/, "");
 export const ADMIN_PASSWORD = env("ADMIN_PASSWORD");
 export const WEBHOOK_DEBUG_LOG = /^(1|true|yes|on)$/i.test(env("WEBHOOK_DEBUG_LOG"));
-export const DEFAULT_API_VERSION = env("META_API_VERSION") || "v25.0";
+export const DEFAULT_API_VERSION = resolveMetaApiVersion(env("META_API_VERSION"), FALLBACK_META_API_VERSION);
 export const FORWARD_TIMEOUT_MS = Math.max(2000, Number(env("FORWARD_TIMEOUT_MS")) || 10000);
 export const ALLOW_INSECURE_FORWARD_URLS = /^(1|true|yes|on)$/i.test(env("ALLOW_INSECURE_FORWARD_URLS"));
 export const FORWARD_ALLOWED_HOSTS = env("FORWARD_ALLOWED_HOSTS")
@@ -154,7 +155,7 @@ export function toPublicApp(app: MetaApp): MetaAppPublic {
     id: app.id,
     name: app.name,
     appId: app.appId,
-    apiVersion: app.apiVersion,
+    apiVersion: resolveMetaApiVersion(app.apiVersion, DEFAULT_API_VERSION),
     wabaConfigId: app.wabaConfigId,
     messengerConfigId: app.messengerConfigId,
     instagramAppId: ig.id,

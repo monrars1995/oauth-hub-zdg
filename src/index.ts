@@ -65,6 +65,7 @@ import { tServer, localesScript, normalizeLang, reloadLocales } from "./i18n";
 import { parseWebhook } from "./webhook-parse";
 import { Channel, ChannelPublic, ChannelType, ForwardDest, ForwardProduct, MetaApp, WebhookEvent } from "./types";
 import { postSafeForwardUrl, UnsafeForwardUrlError, validateForwardUrl } from "./forward-security";
+import { normalizeMetaApiVersion } from "./meta-version";
 
 const app = express();
 
@@ -269,6 +270,9 @@ app.post("/api/apps", apiLimiter, requireAdmin, (req: Request, res: Response) =>
   const appId = typeof b.appId === "string" ? b.appId.trim() : "";
   if (!name) return res.status(400).json({ error: "NAME_REQUIRED" });
   if (!appId) return res.status(400).json({ error: "APP_ID_REQUIRED" });
+  const apiVersionInput = (typeof b.apiVersion === "string" && b.apiVersion.trim()) || DEFAULT_API_VERSION;
+  const apiVersion = normalizeMetaApiVersion(apiVersionInput);
+  if (!apiVersion) return res.status(400).json({ error: "INVALID_API_VERSION" });
   let forwards: ForwardDest[];
   try {
     forwards = sanitizeForwards(b.forwards);
@@ -282,7 +286,7 @@ app.post("/api/apps", apiLimiter, requireAdmin, (req: Request, res: Response) =>
     name,
     appId,
     appSecret: typeof b.appSecret === "string" ? b.appSecret.trim() : "",
-    apiVersion: (typeof b.apiVersion === "string" && b.apiVersion.trim()) || DEFAULT_API_VERSION,
+    apiVersion,
     wabaConfigId: typeof b.wabaConfigId === "string" ? b.wabaConfigId.trim() : "",
     messengerConfigId: typeof b.messengerConfigId === "string" ? b.messengerConfigId.trim() : "",
     instagramAppId: typeof b.instagramAppId === "string" ? b.instagramAppId.trim() : "",
@@ -305,7 +309,11 @@ app.put("/api/apps/:id", apiLimiter, requireAdmin, (req: Request, res: Response)
   const patch: Partial<MetaApp> = {};
   if (typeof b.name === "string" && b.name.trim()) patch.name = b.name.trim();
   if (typeof b.appId === "string" && b.appId.trim()) patch.appId = b.appId.trim();
-  if (typeof b.apiVersion === "string") patch.apiVersion = b.apiVersion.trim() || DEFAULT_API_VERSION;
+  if (typeof b.apiVersion === "string") {
+    const apiVersion = normalizeMetaApiVersion(b.apiVersion.trim() || DEFAULT_API_VERSION);
+    if (!apiVersion) return res.status(400).json({ error: "INVALID_API_VERSION" });
+    patch.apiVersion = apiVersion;
+  }
   if (typeof b.wabaConfigId === "string") patch.wabaConfigId = b.wabaConfigId.trim();
   if (typeof b.messengerConfigId === "string") patch.messengerConfigId = b.messengerConfigId.trim();
   if (typeof b.instagramAppId === "string") patch.instagramAppId = b.instagramAppId.trim();
