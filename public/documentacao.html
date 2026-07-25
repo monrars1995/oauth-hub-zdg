@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Documentação pública de integração do NeuroHub Meta para receber eventos e incorporar o onboarding de canais Meta.">
+  <meta name="theme-color" content="#090a0b">
+  <title>Documentação de integração · NeuroHub Meta</title>
+  <link rel="icon" type="image/svg+xml" href="/assets/goldneuron_logo_mark.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #090a0b;
+      --panel: #101214;
+      --panel-2: #15181a;
+      --line: #292b2d;
+      --line-strong: #3b3a35;
+      --text: #f2eee6;
+      --muted: #a7a39a;
+      --faint: #74716b;
+      --gold: #d7ae62;
+      --gold-soft: #f0cf8c;
+      --green: #66c58b;
+      --red: #ed8a83;
+      --blue: #78b8d6;
+      --mono: "IBM Plex Mono", monospace;
+      --sans: "Manrope", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(900px 520px at 92% -12%, rgba(215,174,98,.1), transparent 68%),
+        linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px),
+        var(--bg);
+      background-size: auto, 48px 48px, 48px 48px, auto;
+      color: var(--text);
+      font: 15px/1.72 var(--sans);
+      min-height: 100vh;
+    }
+    a { color: var(--gold-soft); text-underline-offset: 3px; }
+    a:hover { color: #ffe0a4; }
+    :focus-visible { outline: 2px solid var(--gold); outline-offset: 4px; border-radius: 4px; }
+    .skip {
+      position: fixed; left: 1rem; top: -5rem; z-index: 20;
+      padding: .65rem .9rem; background: var(--gold); color: #17130d; font-weight: 800; border-radius: 8px;
+    }
+    .skip:focus { top: 1rem; }
+    .topbar {
+      position: sticky; top: 0; z-index: 10;
+      display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+      min-height: 66px; padding: .75rem clamp(1rem, 4vw, 4rem);
+      border-bottom: 1px solid rgba(215,174,98,.2);
+      background: rgba(9,10,11,.86); backdrop-filter: blur(18px);
+    }
+    .brand { display: flex; align-items: center; gap: .75rem; color: var(--text); text-decoration: none; }
+    .brand img { width: 32px; height: 32px; object-fit: contain; }
+    .brand strong { display: block; font-size: .88rem; letter-spacing: .01em; }
+    .brand span { display: block; color: var(--faint); font: .7rem var(--mono); margin-top: .12rem; }
+    .top-actions { display: flex; align-items: center; gap: .65rem; }
+    .button {
+      display: inline-flex; align-items: center; justify-content: center; min-height: 38px;
+      padding: .55rem .8rem; border: 1px solid var(--line-strong); border-radius: 8px;
+      color: var(--text); background: #121416; text-decoration: none; font-size: .78rem; font-weight: 700;
+    }
+    .button.primary { border-color: rgba(215,174,98,.55); background: var(--gold); color: #17130d; }
+    .layout {
+      width: min(1240px, calc(100% - 2rem)); margin: 0 auto;
+      display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: clamp(2rem, 5vw, 5.5rem);
+      padding: 3rem 0 6rem;
+    }
+    .sidebar { position: sticky; top: 96px; align-self: start; }
+    .side-label { color: var(--gold); font: 600 .68rem var(--mono); letter-spacing: .16em; text-transform: uppercase; }
+    .sidebar nav { margin-top: 1rem; border-left: 1px solid var(--line); }
+    .sidebar nav a {
+      display: block; padding: .42rem 0 .42rem 1rem; color: var(--muted); text-decoration: none; font-size: .82rem;
+      border-left: 2px solid transparent; margin-left: -1px;
+    }
+    .sidebar nav a:hover { color: var(--text); border-left-color: var(--gold); }
+    .side-status { margin-top: 1.6rem; padding: .85rem; border: 1px solid var(--line); border-radius: 10px; background: rgba(16,18,20,.72); }
+    .status-line { display: flex; align-items: center; gap: .5rem; color: var(--muted); font: .72rem var(--mono); }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 14px rgba(102,197,139,.7); }
+    main { min-width: 0; }
+    .hero { position: relative; padding: .8rem 0 4rem 2rem; border-left: 1px solid rgba(215,174,98,.42); }
+    .hero::before, .hero::after {
+      content: ""; position: absolute; left: -5px; width: 9px; height: 9px; border-radius: 50%;
+      background: var(--bg); border: 2px solid var(--gold);
+    }
+    .hero::before { top: 0; }
+    .hero::after { bottom: 0; }
+    .eyebrow { color: var(--gold); font: 600 .73rem var(--mono); letter-spacing: .17em; text-transform: uppercase; }
+    h1 { max-width: 820px; margin: .7rem 0 1rem; font-size: clamp(2.45rem, 6vw, 5.4rem); line-height: .98; letter-spacing: -.065em; }
+    .hero p { max-width: 760px; margin: 0; color: var(--muted); font-size: clamp(1rem, 2vw, 1.18rem); }
+    .hero-meta { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: 1.6rem; }
+    .pill { padding: .38rem .62rem; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); font: .7rem var(--mono); background: rgba(16,18,20,.7); }
+    section { scroll-margin-top: 94px; padding: 3.5rem 0; border-bottom: 1px solid var(--line); }
+    .section-no { display: block; color: var(--gold); font: 600 .68rem var(--mono); letter-spacing: .15em; margin-bottom: .55rem; }
+    h2 { margin: 0 0 .75rem; font-size: clamp(1.55rem, 3vw, 2.25rem); line-height: 1.15; letter-spacing: -.035em; }
+    h3 { margin: 1.6rem 0 .55rem; font-size: 1rem; letter-spacing: -.01em; }
+    p { color: var(--muted); }
+    .lead { max-width: 780px; font-size: 1.02rem; }
+    .grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: .8rem; margin-top: 1.5rem; }
+    .card { padding: 1.1rem; border: 1px solid var(--line); border-radius: 12px; background: rgba(16,18,20,.8); }
+    .card b { display: block; color: var(--text); margin-bottom: .25rem; }
+    .card p { margin: 0; font-size: .84rem; }
+    .contract {
+      display: grid; grid-template-columns: 145px minmax(0,1fr); gap: 1rem;
+      padding: 1rem 0; border-top: 1px solid var(--line);
+    }
+    .contract:last-child { border-bottom: 1px solid var(--line); }
+    .contract dt { color: var(--faint); font: .72rem var(--mono); }
+    .contract dd { margin: 0; color: var(--muted); }
+    code, pre { font-family: var(--mono); }
+    code { color: var(--gold-soft); }
+    .code-wrap { position: relative; margin: 1rem 0 1.5rem; }
+    .code-label {
+      position: absolute; right: .8rem; top: .7rem; color: var(--faint); font: .62rem var(--mono); letter-spacing: .12em; text-transform: uppercase;
+    }
+    pre {
+      margin: 0; overflow: auto; padding: 1.25rem; border: 1px solid var(--line); border-radius: 12px;
+      background: #0d0f10; color: #d9d5cd; font-size: .76rem; line-height: 1.65; tab-size: 2;
+    }
+    .steps { counter-reset: step; display: grid; gap: .75rem; margin-top: 1.5rem; }
+    .step { counter-increment: step; display: grid; grid-template-columns: 38px 1fr; gap: .85rem; align-items: start; padding: 1rem; border: 1px solid var(--line); border-radius: 12px; background: rgba(16,18,20,.75); }
+    .step::before { content: counter(step, decimal-leading-zero); color: var(--gold); font: 600 .78rem var(--mono); padding-top: .12rem; }
+    .step b { display: block; margin-bottom: .2rem; }
+    .step p { margin: 0; font-size: .86rem; }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0 1.5rem; font-size: .84rem; }
+    th, td { padding: .75rem; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { color: var(--faint); font: 600 .67rem var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+    td { color: var(--muted); }
+    .callout { margin: 1.2rem 0; padding: 1rem 1rem 1rem 1.15rem; border-left: 3px solid var(--gold); background: rgba(215,174,98,.065); color: var(--muted); }
+    .callout strong { color: var(--text); }
+    .callout.danger { border-left-color: var(--red); background: rgba(237,138,131,.055); }
+    .ok-no { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; margin-top: 1.25rem; }
+    .scope { padding: 1rem; border: 1px solid var(--line); border-radius: 12px; }
+    .scope h3 { margin: 0 0 .7rem; }
+    .scope ul { margin: 0; padding-left: 1.1rem; color: var(--muted); }
+    .scope li + li { margin-top: .45rem; }
+    .scope.ok h3 { color: var(--green); }
+    .scope.no h3 { color: var(--red); }
+    .faq details { border-top: 1px solid var(--line); padding: .95rem 0; }
+    .faq details:last-child { border-bottom: 1px solid var(--line); }
+    .faq summary { cursor: pointer; color: var(--text); font-weight: 700; }
+    .faq p { margin: .6rem 0 0; }
+    footer { padding: 2.5rem 0 1rem; color: var(--faint); font-size: .75rem; }
+    footer .links { display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: .8rem; }
+    footer a { color: var(--muted); }
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: minmax(0, 1fr); padding-top: 2rem; }
+      .sidebar, main { min-width: 0; max-width: 100%; }
+      .sidebar { position: static; }
+      .sidebar nav { display: flex; overflow-x: auto; border-left: 0; border-bottom: 1px solid var(--line); padding-bottom: .6rem; }
+      .sidebar nav a { white-space: nowrap; border-left: 0; margin: 0; padding: .4rem .7rem; }
+      .side-status { display: none; }
+    }
+    @media (max-width: 680px) {
+      .topbar { padding-inline: 1rem; }
+      .top-actions .button:first-child { display: none; }
+      .layout { width: calc(100% - 1.25rem); max-width: 1240px; }
+      .hero { padding-left: 1rem; }
+      h1 { font-size: clamp(2.35rem, 14vw, 3.7rem); }
+      .grid, .ok-no { grid-template-columns: 1fr; }
+      .contract { grid-template-columns: 1fr; gap: .3rem; }
+      table { display: block; overflow-x: auto; }
+    }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#conteudo">Ir para o conteúdo</a>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="NeuroHub Meta">
+      <img src="/assets/goldneuron_logo_mark.svg" alt="">
+      <span><strong>NeuroHub Meta</strong><span>by @goldneuron.io</span></span>
+    </a>
+    <div class="top-actions">
+      <a class="button" href="/openapi.json">OpenAPI 3.1</a>
+      <a class="button primary" href="/">Abrir painel</a>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar" aria-label="Índice da documentação">
+      <div class="side-label">Índice</div>
+      <nav>
+        <a href="#escopo">Escopo público</a>
+        <a href="#inicio">Início rápido</a>
+        <a href="#eventos">Eventos por webhook</a>
+        <a href="#assinatura">Verificar assinatura</a>
+        <a href="#onboarding">Onboarding incorporável</a>
+        <a href="#health">Saúde do serviço</a>
+        <a href="#operacao">Comportamento operacional</a>
+        <a href="#problemas">Solução de problemas</a>
+      </nav>
+      <div class="side-status">
+        <div class="status-line"><span class="dot"></span> Contrato público v1</div>
+      </div>
+    </aside>
+
+    <main id="conteudo">
+      <div class="hero">
+        <div class="eyebrow">Integração para parceiros</div>
+        <h1>Documentação de integração</h1>
+        <p>Conecte outros softwares ao NeuroHub Meta para incorporar o onboarding de canais e receber eventos autenticados de WhatsApp Business, Messenger e Instagram.</p>
+        <div class="hero-meta">
+          <span class="pill">Base URL · https://provider.neuros.my</span>
+          <span class="pill">HTTPS obrigatório</span>
+          <span class="pill">OpenAPI 3.1</span>
+        </div>
+      </div>
+
+      <section id="escopo">
+        <span class="section-no">01 / ESCOPO</span>
+        <h2>O contrato público, sem ambiguidades</h2>
+        <p class="lead">O hub é a camada de onboarding e roteamento de eventos oficiais da Meta. Ele mantém credenciais e tokens no servidor, entregando ao software parceiro apenas o que é necessário para operar a integração.</p>
+        <div class="ok-no">
+          <div class="scope ok">
+            <h3>Suportado</h3>
+            <ul>
+              <li>Receber eventos Meta por forwarding HTTPS.</li>
+              <li>Abrir onboarding de WABA, Messenger e Instagram.</li>
+              <li>Consultar a disponibilidade do serviço.</li>
+              <li>Filtrar destinos por produto/canal.</li>
+            </ul>
+          </div>
+          <div class="scope no">
+            <h3>Fora deste contrato</h3>
+            <ul>
+              <li>O hub não expõe tokens de canal para terceiros.</li>
+              <li>O hub não envia mensagens como proxy da Graph API.</li>
+              <li>Apps e canais não possuem listagem pública.</li>
+              <li>A sessão do painel não é credencial de integração.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="inicio">
+        <span class="section-no">02 / INÍCIO RÁPIDO</span>
+        <h2>Do endpoint ao primeiro evento</h2>
+        <div class="steps">
+          <div class="step"><div><b>Prepare um endpoint público</b><p>Disponibilize uma URL HTTPS que aceite POST JSON, por exemplo <code>https://seu-software.com/webhooks/neurohub</code>.</p></div></div>
+          <div class="step"><div><b>Cadastre o destino no app</b><p>No painel, abra <strong>Apps → Editar → Outros pontos</strong>, informe a URL e selecione todos os eventos ou um produto específico.</p></div></div>
+          <div class="step"><div><b>Preserve o corpo bruto</b><p>Leia os bytes originais antes do parse JSON. Eles são necessários para validar a assinatura HMAC.</p></div></div>
+          <div class="step"><div><b>Responda rapidamente com 2xx</b><p>Confirme o recebimento após persistir ou enfileirar o evento. Processamento pesado deve ocorrer de forma assíncrona no seu software.</p></div></div>
+          <div class="step"><div><b>Teste com um evento real</b><p>Envie uma mensagem ao canal conectado e confirme o status do forwarding no painel do hub.</p></div></div>
+        </div>
+      </section>
+
+      <section id="eventos">
+        <span class="section-no">03 / WEBHOOK</span>
+        <h2>Contrato de entrega de eventos</h2>
+        <p class="lead">O destino recebe o mesmo corpo JSON autenticado que chegou da Meta. O hub não remodela nem remove campos do payload.</p>
+        <dl>
+          <div class="contract"><dt>Método</dt><dd><code>POST</code></dd></div>
+          <div class="contract"><dt>Content-Type</dt><dd><code>application/json</code></dd></div>
+          <div class="contract"><dt>X-Hub-App</dt><dd>Identificador interno do app que recebeu o evento.</dd></div>
+          <div class="contract"><dt>X-Hub-Signature-256</dt><dd>Assinatura original da Meta no formato <code>sha256=&lt;hex&gt;</code>.</dd></div>
+          <div class="contract"><dt>Corpo</dt><dd>Envelope original da Meta; a estrutura varia por produto e tipo de evento.</dd></div>
+          <div class="contract"><dt>Sucesso</dt><dd>Qualquer resposta HTTP entre <code>200</code> e <code>299</code>.</dd></div>
+        </dl>
+        <div class="code-wrap">
+          <span class="code-label">Exemplo · WABA</span>
+          <pre><code>{
+  "object": "whatsapp_business_account",
+  "entry": [{
+    "id": "WABA_ID",
+    "changes": [{
+      "field": "messages",
+      "value": {
+        "metadata": { "phone_number_id": "PHONE_NUMBER_ID" },
+        "messages": [{
+          "id": "wamid.EXEMPLO",
+          "from": "5511999999999",
+          "type": "text",
+          "text": { "body": "Olá" }
+        }]
+      }
+    }]
+  }]
+}</code></pre>
+        </div>
+        <div class="callout"><strong>Compatibilidade futura:</strong> aceite campos desconhecidos e use os identificadores de evento/mensagem da Meta para idempotência. Não valide o payload com schema fechado.</div>
+      </section>
+
+      <section id="assinatura">
+        <span class="section-no">04 / SEGURANÇA</span>
+        <h2>Verifique antes de processar</h2>
+        <p class="lead">Calcule HMAC-SHA256 sobre os bytes exatos do corpo usando o App Secret correspondente. Compare o resultado em tempo constante com <code>X-Hub-Signature-256</code>.</p>
+        <div class="code-wrap">
+          <span class="code-label">Node.js</span>
+          <pre><code>import { createHmac, timingSafeEqual } from "node:crypto";
+
+function validSignature(rawBody, received, appSecret) {
+  const expected = "sha256=" + createHmac("sha256", appSecret)
+    .update(rawBody)
+    .digest("hex");
+
+  const a = Buffer.from(received || "");
+  const b = Buffer.from(expected);
+  return a.length === b.length &amp;&amp; timingSafeEqual(a, b);
+}</code></pre>
+        </div>
+        <div class="callout danger"><strong>Importante:</strong> não faça <code>JSON.parse</code> e depois serialize novamente antes de validar. Espaços, ordem e codificação podem mudar e invalidar o HMAC. O App Secret deve ser compartilhado com o parceiro por um canal seguro, nunca colocado no frontend.</div>
+      </section>
+
+      <section id="onboarding">
+        <span class="section-no">05 / ONBOARDING</span>
+        <h2>Conexão incorporável de canais</h2>
+        <p class="lead">Ative <strong>Permitir botão público de conexão</strong> no app e copie o snippet gerado no próprio card. O hub cria um state assinado e conduz o usuário pelo fluxo oficial da Meta.</p>
+        <div class="code-wrap">
+          <span class="code-label">Endpoint</span>
+          <pre><code>GET /embed/connect?app=APP_PUBLICADO&amp;channel=waba&amp;lang=pt</code></pre>
+        </div>
+        <table>
+          <thead><tr><th>Parâmetro</th><th>Obrigatório</th><th>Valores</th><th>Uso</th></tr></thead>
+          <tbody>
+            <tr><td><code>app</code></td><td>Sim</td><td>Gerado pelo hub</td><td>Use exatamente o valor presente no snippet do painel.</td></tr>
+            <tr><td><code>channel</code></td><td>Sim</td><td><code>waba</code>, <code>messenger</code>, <code>instagram</code></td><td>Seleciona o fluxo de conexão.</td></tr>
+            <tr><td><code>lang</code></td><td>Não</td><td><code>pt</code>, <code>en</code>, <code>es</code></td><td>Idioma da interface; padrão <code>pt</code>.</td></tr>
+          </tbody>
+        </table>
+        <div class="callout"><strong>Segurança do fluxo:</strong> a URL pública não contém App Secret nem token. O state é assinado, tem validade curta e é consumido no intercâmbio OAuth.</div>
+      </section>
+
+      <section id="health">
+        <span class="section-no">06 / OPERAÇÕES</span>
+        <h2>Saúde do serviço</h2>
+        <div class="code-wrap">
+          <span class="code-label">HTTP</span>
+          <pre><code>GET /health
+
+{
+  "status": "ok",
+  "uptime": 3600.25,
+  "apps": 1,
+  "channels": 3
+}</code></pre>
+        </div>
+        <p>Considere o hub disponível quando a resposta for <code>200</code> e <code>status</code> for <code>ok</code>. Os contadores são informativos e não substituem uma API de inventário.</p>
+      </section>
+
+      <section id="operacao">
+        <span class="section-no">07 / GARANTIAS</span>
+        <h2>Comportamento operacional</h2>
+        <div class="grid">
+          <div class="card"><b>Uma tentativa</b><p>Cada evento gera uma tentativa por destino. Não há retry automático; use alertas e reconciliação no parceiro.</p></div>
+          <div class="card"><b>Timeout controlado</b><p>O padrão operacional é 10 segundos. Responda após enfileirar, não após concluir tarefas pesadas.</p></div>
+          <div class="card"><b>Sem redirects</b><p>O hub não segue 3xx. Configure diretamente a URL HTTPS final.</p></div>
+          <div class="card"><b>Rede pública</b><p>Destinos localhost, redes privadas, reservadas ou DNS inseguro são bloqueados.</p></div>
+          <div class="card"><b>Corpo original</b><p>A assinatura e o payload encaminhados correspondem aos bytes aceitos da Meta.</p></div>
+          <div class="card"><b>2xx é sucesso</b><p>Qualquer outro status é registrado como falha no histórico, quando o histórico estiver ativo.</p></div>
+        </div>
+      </section>
+
+      <section id="problemas" class="faq">
+        <span class="section-no">08 / TROUBLESHOOTING</span>
+        <h2>Solução de problemas</h2>
+        <details><summary>O destino foi recusado ao salvar</summary><p>Use HTTPS, sem credenciais na URL, sem fragmento e com DNS resolvendo apenas para endereços públicos. Domínios locais e redes privadas são bloqueados.</p></details>
+        <details><summary>O evento não chegou ao meu software</summary><p>Confirme que o destino está ativo, que o filtro inclui o produto correto e que a Meta enviou um webhook assinado ao app. Consulte o status do forwarding no histórico do painel.</p></details>
+        <details><summary>O onboarding mostra “indisponível”</summary><p>O app pode estar sem embed público, sem credenciais completas ou com um canal inválido. Gere novamente o snippet no card do app após salvar a configuração.</p></details>
+        <details><summary>Posso listar canais ou enviar mensagens por essa API?</summary><p>Não neste contrato público. O hub mantém tokens e inventário protegidos e não funciona como proxy de envio. Para uma integração parceira com API própria e credenciais dedicadas, fale com a @goldneuron.io.</p></details>
+      </section>
+
+      <footer>
+        <div class="links">
+          <a href="/openapi.json">OpenAPI 3.1</a>
+          <a href="/politica-privacidade">Política de Privacidade</a>
+          <a href="/termos-servico">Termos de Serviço</a>
+          <a href="/lgpd">LGPD</a>
+          <a href="https://github.com/monrars1995/oauth-hub-zdg" target="_blank" rel="noopener">Código-fonte</a>
+          <a href="https://goldneuron.io/" target="_blank" rel="noopener">@goldneuron.io</a>
+        </div>
+        <div>GOLDNEURON.IO INOVA SIMPLES I.S. - ME · CNPJ 63.173.644/0001-00</div>
+      </footer>
+    </main>
+  </div>
+</body>
+</html>

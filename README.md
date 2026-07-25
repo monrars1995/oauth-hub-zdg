@@ -116,6 +116,10 @@ Coloque o serviço atrás de **HTTPS** — a Meta exige HTTPS para OAuth e webho
 **Embed (público, sem auth — gated por `embedEnabled` do app)**
 - `GET /embed/connect?app=<id>&channel=<waba|messenger|instagram>` → abre a conexão daquele app.
 
+**Documentação pública para integrações**
+- `GET /documentacao` (alias: `/docs`) — guia humano para parceiros.
+- `GET /openapi.json` — contrato OpenAPI 3.1 do onboarding, health e webhook de forwarding.
+
 **Documentos legais públicos**
 - `GET /politica-privacidade`
 - `GET /termos-servico`

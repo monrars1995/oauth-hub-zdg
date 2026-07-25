@@ -1,0 +1,226 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "NeuroHub Meta — Integração para parceiros",
+    "version": "1.0.0",
+    "description": "Contrato público para incorporar o onboarding de canais Meta, receber eventos encaminhados pelo NeuroHub Meta e consultar a saúde do serviço. APIs administrativas, tokens de canal e envio de mensagens não fazem parte deste contrato.",
+    "contact": {
+      "name": "@goldneuron.io",
+      "url": "https://goldneuron.io/"
+    },
+    "license": {
+      "name": "AGPL-3.0",
+      "url": "https://github.com/monrars1995/oauth-hub-zdg/blob/feat/goldneuron-whitelabel-hardening/LICENSE"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://provider.neuros.my",
+      "description": "Produção"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Onboarding",
+      "description": "Início público do fluxo de conexão de canais, habilitado individualmente pelo administrador do hub."
+    },
+    {
+      "name": "Operações",
+      "description": "Disponibilidade do serviço."
+    }
+  ],
+  "paths": {
+    "/embed/connect": {
+      "get": {
+        "tags": ["Onboarding"],
+        "summary": "Abrir o onboarding de um canal Meta",
+        "description": "Gera um state OAuth assinado e redireciona para o fluxo oficial do canal. O app precisa estar configurado e com embed público habilitado. Use a URL ou o snippet gerado na aba Apps do painel; não tente descobrir identificadores internos.",
+        "operationId": "openChannelOnboarding",
+        "security": [],
+        "parameters": [
+          {
+            "name": "app",
+            "in": "query",
+            "required": true,
+            "description": "Identificador interno presente no snippet gerado pelo painel.",
+            "schema": { "type": "string", "minLength": 1 },
+            "example": "app_publicado"
+          },
+          {
+            "name": "channel",
+            "in": "query",
+            "required": true,
+            "description": "Canal que será conectado.",
+            "schema": {
+              "type": "string",
+              "enum": ["waba", "messenger", "instagram"]
+            },
+            "example": "waba"
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "required": false,
+            "description": "Idioma da interface de conexão.",
+            "schema": {
+              "type": "string",
+              "enum": ["pt", "en", "es"],
+              "default": "pt"
+            }
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirecionamento para a página de conexão do canal.",
+            "headers": {
+              "Location": {
+                "description": "URL same-origin com state OAuth assinado.",
+                "schema": { "type": "string", "format": "uri" }
+              }
+            }
+          },
+          "200": {
+            "description": "Página HTML de indisponibilidade quando o embed está desabilitado, o canal é inválido ou o app está incompleto.",
+            "content": {
+              "text/html": {
+                "schema": { "type": "string" }
+              }
+            }
+          },
+          "429": {
+            "description": "Limite de requisições excedido."
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": ["Operações"],
+        "summary": "Consultar saúde do hub",
+        "operationId": "getHealth",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Serviço disponível.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Health" },
+                "example": {
+                  "status": "ok",
+                  "uptime": 3600.25,
+                  "apps": 1,
+                  "channels": 3
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "webhooks": {
+    "channelEvent": {
+      "post": {
+        "summary": "Evento Meta encaminhado pelo NeuroHub Meta",
+        "description": "O hub envia uma única requisição POST com os bytes JSON originais recebidos da Meta. O destino deve verificar X-Hub-Signature-256 sobre o corpo bruto e responder com qualquer status 2xx. Redirecionamentos não são seguidos e não há retry automático.",
+        "operationId": "receiveChannelEvent",
+        "security": [
+          { "MetaSignature": [] }
+        ],
+        "parameters": [
+          {
+            "name": "X-Hub-App",
+            "in": "header",
+            "required": true,
+            "description": "Identificador interno do app que recebeu o evento.",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "X-Hub-Signature-256",
+            "in": "header",
+            "required": true,
+            "description": "Assinatura original da Meta no formato sha256=<hex>. Verifique HMAC-SHA256 usando o App Secret correspondente e os bytes exatos do corpo.",
+            "schema": {
+              "type": "string",
+              "pattern": "^sha256=[a-fA-F0-9]{64}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Payload original da Meta; o formato varia entre WhatsApp Business, Messenger e Instagram.",
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/MetaWebhookPayload" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Evento aceito. Qualquer resposta 2xx é considerada sucesso pelo hub."
+          },
+          "400": {
+            "description": "Payload rejeitado pelo software parceiro. O hub registra a falha, sem retry automático."
+          },
+          "401": {
+            "description": "Assinatura rejeitada pelo software parceiro."
+          },
+          "500": {
+            "description": "Falha do software parceiro. O hub registra a falha, sem retry automático."
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "MetaSignature": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Hub-Signature-256",
+        "description": "Assinatura HMAC-SHA256 original da Meta calculada sobre os bytes exatos do corpo."
+      }
+    },
+    "schemas": {
+      "Health": {
+        "type": "object",
+        "required": ["status", "uptime", "apps", "channels"],
+        "properties": {
+          "status": { "type": "string", "const": "ok" },
+          "uptime": { "type": "number", "minimum": 0 },
+          "apps": { "type": "integer", "minimum": 0 },
+          "channels": { "type": "integer", "minimum": 0 }
+        },
+        "additionalProperties": false
+      },
+      "MetaWebhookPayload": {
+        "type": "object",
+        "description": "Envelope JSON original da Meta. Preserve campos desconhecidos para compatibilidade futura.",
+        "additionalProperties": true,
+        "properties": {
+          "object": { "type": "string" },
+          "entry": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          }
+        }
+      }
+    }
+  },
+  "x-integration-boundaries": {
+    "supported": [
+      "Receber eventos Meta por forwarding HTTPS",
+      "Abrir onboarding incorporável de WhatsApp Business, Messenger e Instagram",
+      "Consultar saúde pública do serviço"
+    ],
+    "notSupported": [
+      "Acesso público a tokens de canais",
+      "Uso da sessão administrativa como credencial de parceiro",
+      "Envio de mensagens como proxy da Graph API",
+      "Listagem pública de apps ou canais"
+    ]
+  }
+}

@@ -268,6 +268,7 @@
   "config.aboutDesc": "Este hub de código abierto es mantenido por {brand} para operar integraciones oficiales del ecosistema Meta.",
   "config.aboutP": "Una base operativa para onboarding OAuth, recepción autenticada de webhooks y reenvío seguro de eventos.",
   "config.aboutBtn": "Visitar goldneuron.io",
+  "config.docsBtn": "Documentación de integración",
   "config.sourceBtn": "Repositorio público",
   "footer.by": "by @goldneuron.io",
   "guide.title": "Cómo configurar tu app en Meta",

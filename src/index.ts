@@ -999,6 +999,14 @@ app.get(Object.keys(legalDocuments), (req: Request, res: Response) => {
   res.setHeader("Cache-Control", "public, max-age=300");
   res.sendFile(path.join(publicDir, legalDocuments[req.path]));
 });
+const documentationRoutes: Record<string, string> = {
+  "/documentacao": "documentacao.html",
+  "/docs": "documentacao.html",
+};
+app.get(Object.keys(documentationRoutes), (req: Request, res: Response) => {
+  res.setHeader("Cache-Control", "public, max-age=300");
+  res.sendFile(path.join(publicDir, documentationRoutes[req.path]));
+});
 app.get("/favicon.ico", (_req: Request, res: Response) => {
   res.setHeader("Cache-Control", "public, max-age=86400");
   res.type("image/svg+xml").sendFile(path.join(publicDir, "assets", "goldneuron_logo_mark.svg"));

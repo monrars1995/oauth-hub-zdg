@@ -876,6 +876,44 @@ test("legal pages are public and identify the responsible company", async () => 
   }
 });
 
+test("public integration documentation exposes only the supported partner contracts", async () => {
+  const server = await startServer();
+  try {
+    for (const route of ["/documentacao", "/docs"]) {
+      const response = await request(server.base, route);
+      assert.equal(response.status, 200, route);
+      assert.match(response.text, /Documentação de integração/);
+      assert.match(response.text, /X-Hub-App/);
+      assert.match(response.text, /X-Hub-Signature-256/);
+      assert.match(response.text, /\/embed\/connect\?app=/);
+      assert.match(response.text, /GET \/health/);
+      assert.match(response.text, /não (?:expõe|fornece) tokens/i);
+      assert.match(response.text, /não (?:envia|é gateway de envio de) mensagens/i);
+      assert.doesNotMatch(response.text, /ADMIN_PASSWORD|DATA_ENCRYPTION_KEY|SESSION_SECRET/);
+    }
+
+    const specification = await request(server.base, "/openapi.json");
+    assert.equal(specification.status, 200);
+    assert.match(specification.headers.get("content-type") || "", /application\/json/);
+    assert.equal(specification.body.openapi, "3.1.0");
+    assert.ok(specification.body.paths["/embed/connect"]);
+    assert.ok(specification.body.paths["/health"]);
+    assert.ok(specification.body.webhooks.channelEvent);
+    assert.equal(specification.body.paths["/api/channels"], undefined);
+    assert.equal(specification.body.paths["/api/apps"], undefined);
+
+    const panel = await request(server.base, "/");
+    assert.match(panel.text, /id="aboutDocs"[^>]*href="\/documentacao"[^>]*data-i18n="config\.docsBtn"/);
+    for (const locale of ["pt", "en", "es"]) {
+      const dictionary = JSON.parse(fs.readFileSync(path.join(ROOT, "locales", `${locale}.json`), "utf8"));
+      assert.equal(typeof dictionary["config.docsBtn"], "string", locale);
+      assert.ok(dictionary["config.docsBtn"].length > 0, locale);
+    }
+  } finally {
+    await server.stop();
+  }
+});
+
 test("the authentication page exposes accessible public legal links", async () => {
   const server = await startServer();
   try {
