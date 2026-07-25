@@ -65,6 +65,7 @@ import { tServer, localesScript, normalizeLang, reloadLocales } from "./i18n";
 import { parseWebhook } from "./webhook-parse";
 import { Channel, ChannelPublic, ChannelType, ForwardDest, ForwardProduct, MetaApp, WebhookEvent } from "./types";
 import { postSafeForwardUrl, UnsafeForwardUrlError, validateForwardUrl } from "./forward-security";
+import { buildForwardHeaders, InvalidForwardSigningSecretError, normalizeForwardSigningSecret } from "./forward-signing";
 import { normalizeMetaApiVersion } from "./meta-version";
 
 const app = express();
@@ -204,22 +205,30 @@ function renderResultPage(res: Response, ok: boolean, lang: string, titleKey: st
 </body></html>`);
 }
 
-function sanitizeForwards(input: any): ForwardDest[] {
+function sanitizeForwards(input: any, existing: ForwardDest[] = []): ForwardDest[] {
   if (!Array.isArray(input)) return [];
   const valid: ForwardProduct[] = ["all", "waba", "messenger", "instagram"];
+  const existingById = new Map(existing.map((forward) => [forward.id, forward]));
   const out: ForwardDest[] = [];
   for (const f of input) {
     if (!f || typeof f.url !== "string") continue;
     const url = validateForwardUrl(f.url.trim()).toString();
+    const previous = typeof f.id === "string" ? existingById.get(f.id) : undefined;
+    const suppliedSecret = typeof f.signingSecret === "string" ? f.signingSecret.trim() : "";
+    const signingSecret = suppliedSecret
+      ? normalizeForwardSigningSecret(suppliedSecret)
+      : previous?.signingSecret || "";
+    if (!signingSecret && !previous) throw new InvalidForwardSigningSecretError();
     let products: ForwardProduct[] = Array.isArray(f.products)
       ? f.products.filter((p: any) => valid.includes(p))
       : ["all"];
     if (!products.length) products = ["all"];
     out.push({
-      id: typeof f.id === "string" && f.id ? f.id : newId(),
+      id: previous?.id || newId(),
       url,
       products,
       enabled: f.enabled !== false,
+      signingSecret,
     });
   }
   return out;
@@ -281,6 +290,7 @@ app.post("/api/apps", apiLimiter, requireAdmin, (req: Request, res: Response) =>
     forwards = sanitizeForwards(b.forwards);
   } catch (error) {
     if (error instanceof UnsafeForwardUrlError) return res.status(400).json({ error: "UNSAFE_FORWARD_URL" });
+    if (error instanceof InvalidForwardSigningSecretError) return res.status(400).json({ error: "INVALID_FORWARD_SIGNING_SECRET" });
     throw error;
   }
   const now = new Date().toISOString();
@@ -331,9 +341,10 @@ app.put("/api/apps/:id", apiLimiter, requireAdmin, (req: Request, res: Response)
   }
   if (b.forwards !== undefined) {
     try {
-      patch.forwards = sanitizeForwards(b.forwards);
+      patch.forwards = sanitizeForwards(b.forwards, existing.forwards || []);
     } catch (error) {
       if (error instanceof UnsafeForwardUrlError) return res.status(400).json({ error: "UNSAFE_FORWARD_URL" });
+      if (error instanceof InvalidForwardSigningSecretError) return res.status(400).json({ error: "INVALID_FORWARD_SIGNING_SECRET" });
       throw error;
     }
   }
@@ -839,9 +850,9 @@ function relayToApp(appCfg: MetaApp, product: ChannelType | "unknown", rawBody: 
   for (const d of dests) {
     setImmediate(async () => {
       try {
-        const headers: Record<string, string> = { "Content-Type": "application/json", "X-Hub-App": appCfg.id };
-        if (sigHeader) headers["X-Hub-Signature-256"] = sigHeader;
-        const r = await postSafeForwardUrl(d.url, rawBody || "{}", headers, FORWARD_TIMEOUT_MS);
+        const body = rawBody || "{}";
+        const headers = buildForwardHeaders(appCfg.id, body, sigHeader, d.signingSecret);
+        const r = await postSafeForwardUrl(d.url, body, headers, FORWARD_TIMEOUT_MS);
         recordForwardResult(appCfg.id, eventId, d.url, r.ok, r.status);
         if (WEBHOOK_DEBUG_LOG) console.log(`[forward] app=${appCfg.id} status=${r.status}`);
       } catch (err: any) {

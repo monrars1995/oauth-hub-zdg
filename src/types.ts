@@ -28,6 +28,16 @@ export interface ForwardDest {
   url: string;
   products: ForwardProduct[]; // which products to relay; ["all"] = everything
   enabled: boolean;
+  signingSecret?: string;     // dedicated partner HMAC secret; never the Meta App Secret
+}
+
+/** Browser-safe destination projection. The signing secret never leaves the server. */
+export interface ForwardDestPublic {
+  id: string;
+  url: string;
+  products: ForwardProduct[];
+  enabled: boolean;
+  hasSigningSecret: boolean;
 }
 
 /** A registered Meta app. Each app has its own credentials and webhook routing. */
@@ -63,7 +73,7 @@ export interface MetaAppPublic {
   hasInstagramAppSecret: boolean;
   hasMessengerFallbackToken: boolean;
   webhookVerifyTokenSet: boolean;
-  forwards: ForwardDest[];
+  forwards: ForwardDestPublic[];
   storeEvents: boolean;
   embedEnabled: boolean;
   channelCount: number;

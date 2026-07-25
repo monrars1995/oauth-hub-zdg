@@ -16,10 +16,10 @@ Não valida licença e não depende de nenhum backend externo. Guarda os apps, c
   - Messenger — Facebook Login for Business (`config_id`) ou diálogo clássico; lista e assina Páginas.
   - Instagram — Instagram Login, token de longa duração e assinatura da conta.
 - **Webhooks por app** — verificação por Verify Token do app e recebimento; tudo aparece no feed “Interações”.
-- **Roteamento / encaminhamento** — cada app pode repassar seus webhooks para uma ou mais URLs (“outros pontos”), com filtro por produto. POST com o corpo original + cabeçalho `X-Hub-App` (e `X-Hub-Signature-256`, quando houver).
+- **Roteamento / encaminhamento** — cada app pode repassar seus webhooks para uma ou mais URLs (“outros pontos”), com filtro por produto. Cada entrega leva o corpo original, `X-Hub-App`, timestamp anti-replay e `X-NeuroHub-Signature-256`, assinada com um segredo dedicado por destino.
 - **Modo histórico × transacional** — por app, escolha **salvar histórico** no painel ou apenas **encaminhar** (ponta a ponta) sem guardar nada.
 - **Botões de embed** — gere um botão de conexão para colar **fora do painel** (em qualquer site), por app/canal.
-- **Segurança** — App Secret só no servidor; secrets/tokens são criptografados em disco com AES-256-GCM; tokens de canal nunca vão ao navegador; webhooks são rejeitados sem `X-Hub-Signature-256` válida; sessão administrativa em cookie HttpOnly; produção exige senha, segredo de sessão, chave de dados e HTTPS; encaminhamentos bloqueiam redes privadas, redirects e DNS rebinding com o IP validado fixado no socket.
+- **Segurança** — App Secret só no servidor e nunca é compartilhado com parceiros; secrets/tokens/URLs de forwarding são criptografados em disco com AES-256-GCM; tokens de canal nunca vão ao navegador; webhooks são rejeitados sem `X-Hub-Signature-256` válida; encaminhamentos usam segredo dedicado, timestamp e HMAC próprio; sessão administrativa em cookie HttpOnly; produção exige senha, segredo de sessão, chave de dados e HTTPS; encaminhamentos bloqueiam redes privadas, redirects e DNS rebinding com o IP validado fixado no socket.
 - **Painel operacional** — **visão geral** (KPIs + gráfico de atividade da última hora + mix de canais), **console ao vivo** das interações (filtros, busca, payload com realce de sintaxe, som opcional), **canais como health cards** (status do webhook + sparkline), **command palette** (`Ctrl`/`⌘`+`K`), **tema claro/escuro**, layout **responsivo (mobile)** e **i18n** (pt / en / es).
 
 ---
@@ -119,6 +119,7 @@ Coloque o serviço atrás de **HTTPS** — a Meta exige HTTPS para OAuth e webho
 **Documentação pública para integrações**
 - `GET /documentacao` (alias: `/docs`) — guia humano para parceiros.
 - `GET /openapi.json` — contrato OpenAPI 3.1 do onboarding, health e webhook de forwarding.
+- Verifique `X-NeuroHub-Signature-256` sobre `X-NeuroHub-Timestamp + "." + corpo bruto` usando somente o segredo dedicado do destino.
 
 **Documentos legais públicos**
 - `GET /politica-privacidade`

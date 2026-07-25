@@ -429,6 +429,80 @@ test("forward delivery pins the validated DNS address on the outbound socket", a
   }
 });
 
+test("partner forwarding signatures bind a dedicated secret, timestamp and exact raw body", () => {
+  const dir = makeSandbox();
+  const signing = require(path.join(dir, "dist", "forward-signing.js"));
+  const raw = '{ "message": "olá" }\n';
+  const secret = "partner-only-secret-" + "a".repeat(48);
+  const timestamp = "1735689600";
+  const headers = signing.buildForwardHeaders("app-a", raw, "sha256=meta-original", secret, timestamp);
+  const expected = "sha256=" + crypto.createHmac("sha256", secret)
+    .update(`${timestamp}.`, "utf8")
+    .update(raw, "utf8")
+    .digest("hex");
+
+  assert.equal(headers["Content-Type"], "application/json");
+  assert.equal(headers["X-Hub-App"], "app-a");
+  assert.equal(headers["X-Hub-Signature-256"], "sha256=meta-original");
+  assert.equal(headers["X-NeuroHub-Timestamp"], timestamp);
+  assert.equal(headers["X-NeuroHub-Signature-256"], expected);
+  assert.doesNotMatch(JSON.stringify(headers), new RegExp(secret));
+
+  const legacy = signing.buildForwardHeaders("app-a", raw, undefined, "", timestamp);
+  assert.equal(legacy["X-NeuroHub-Timestamp"], undefined);
+  assert.equal(legacy["X-NeuroHub-Signature-256"], undefined);
+  assert.throws(() => signing.normalizeForwardSigningSecret("too-short"), /at least 32 bytes/i);
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test("new partner destinations require a strong secret and never expose it through the admin API", async () => {
+  const server = await startServer();
+  const partnerSecret = "partner-forward-secret-" + "b".repeat(48);
+  try {
+    const session = await login(server.base);
+    for (const signingSecret of [undefined, "too-short"]) {
+      const response = await createApp(server, session.authHeaders, {
+        name: `Partner ${signingSecret || "missing"}`,
+        forwards: [{ url: "https://partner.example.test/webhooks/neurohub", products: ["all"], enabled: true, signingSecret }],
+      });
+      assert.equal(response.status, 400);
+      assert.equal(response.body.error, "INVALID_FORWARD_SIGNING_SECRET");
+    }
+
+    const created = await createApp(server, session.authHeaders, {
+      name: "Secure partner",
+      forwards: [{ url: "https://partner.example.test/webhooks/neurohub", products: ["waba"], enabled: true, signingSecret: partnerSecret }],
+    });
+    assert.equal(created.status, 200);
+    assert.equal(created.body.app.forwards.length, 1);
+    assert.equal(created.body.app.forwards[0].hasSigningSecret, true);
+    assert.equal(created.body.app.forwards[0].signingSecret, undefined);
+    assert.doesNotMatch(JSON.stringify(created.body), new RegExp(partnerSecret));
+
+    const listed = await request(server.base, "/api/apps", { headers: session.authHeaders });
+    assert.equal(listed.status, 200);
+    assert.equal(listed.body.apps[0].forwards[0].hasSigningSecret, true);
+    assert.equal(listed.body.apps[0].forwards[0].signingSecret, undefined);
+    assert.doesNotMatch(JSON.stringify(listed.body), new RegExp(partnerSecret));
+
+    const preserved = await request(server.base, `/api/apps/${created.body.app.id}`, {
+      method: "PUT",
+      headers: session.authHeaders,
+      body: { forwards: created.body.app.forwards },
+    });
+    assert.equal(preserved.status, 200);
+    assert.equal(preserved.body.app.forwards[0].hasSigningSecret, true);
+    assert.equal(preserved.body.app.forwards[0].signingSecret, undefined);
+
+    await new Promise((resolve) => setTimeout(resolve, 80));
+    const stored = fs.readFileSync(path.join(server.dir, "data", "apps.json"), "utf8");
+    assert.doesNotMatch(stored, new RegExp(partnerSecret));
+    assert.match(stored, /enc:v1:/);
+  } finally {
+    await server.stop();
+  }
+});
+
 test("multi-app channel storage keys by app, type and external id", async () => {
   const dir = makeSandbox();
   const store = require(path.join(dir, "dist", "store.js"));
@@ -607,7 +681,7 @@ test("secret-bearing JSON files are encrypted and written with owner-only permis
     id: "app-a", name: "A", appId: "meta-a", appSecret: "main-secret-must-not-leak", apiVersion: "v25.0",
     wabaConfigId: "", messengerConfigId: "", instagramAppId: "", instagramAppSecret: "",
     messengerFallbackToken: "", webhookVerifyToken: "verify-token-must-not-leak",
-    forwards: [{ url: "https://hooks.example.test/inbox?token=app-forward-token-must-not-leak", products: ["all"], enabled: true }], storeEvents: true,
+    forwards: [{ url: "https://hooks.example.test/inbox?token=app-forward-token-must-not-leak", products: ["all"], enabled: true, signingSecret: "partner-signing-secret-must-not-leak-0123456789" }], storeEvents: true,
     embedEnabled: false, createdAt: new Date().toISOString(),
   });
   store.upsertChannel({
@@ -629,7 +703,7 @@ test("secret-bearing JSON files are encrypted and written with owner-only permis
   const appFile = fs.readFileSync(appPath, "utf8");
   const channelFile = fs.readFileSync(channelPath, "utf8");
   const eventFile = fs.readFileSync(eventPath, "utf8");
-  assert.doesNotMatch(appFile, /main-secret-must-not-leak|verify-token-must-not-leak|app-forward-token-must-not-leak/);
+  assert.doesNotMatch(appFile, /main-secret-must-not-leak|verify-token-must-not-leak|app-forward-token-must-not-leak|partner-signing-secret-must-not-leak/);
   assert.doesNotMatch(channelFile, /channel-token-must-not-leak/);
   assert.doesNotMatch(eventFile, /event-forward-token-must-not-leak/);
   assert.match(appFile, /enc:v1:/);
@@ -646,6 +720,7 @@ test("secret-bearing JSON files are encrypted and written with owner-only permis
     assert.equal(reloaded.findApp("app-a").appSecret, "main-secret-must-not-leak");
     assert.equal(reloaded.findChannelById("channel-a").accessToken, "channel-token-must-not-leak");
     assert.match(reloaded.findApp("app-a").forwards[0].url, /app-forward-token-must-not-leak/);
+    assert.match(reloaded.findApp("app-a").forwards[0].signingSecret, /partner-signing-secret-must-not-leak/);
     assert.match(reloaded.listEvents()[0].forwards[0].url, /event-forward-token-must-not-leak/);
   } finally {
     if (previousDataKey === undefined) delete process.env.DATA_ENCRYPTION_KEY;
@@ -885,10 +960,15 @@ test("public integration documentation exposes only the supported partner contra
       assert.match(response.text, /Documentação de integração/);
       assert.match(response.text, /X-Hub-App/);
       assert.match(response.text, /X-Hub-Signature-256/);
+      assert.match(response.text, /X-NeuroHub-Timestamp/);
+      assert.match(response.text, /X-NeuroHub-Signature-256/);
       assert.match(response.text, /\/embed\/connect\?app=/);
       assert.match(response.text, /GET \/health/);
       assert.match(response.text, /não (?:expõe|fornece) tokens/i);
       assert.match(response.text, /não (?:envia|é gateway de envio de) mensagens/i);
+      assert.match(response.text, /nunca compartilhe o App Secret/i);
+      assert.doesNotMatch(response.text, /App Secret deve ser compartilhado/i);
+      assert.doesNotMatch(response.text, /href="\/"[^>]*>Abrir painel/i);
       assert.doesNotMatch(response.text, /ADMIN_PASSWORD|DATA_ENCRYPTION_KEY|SESSION_SECRET/);
     }
 
@@ -899,6 +979,9 @@ test("public integration documentation exposes only the supported partner contra
     assert.ok(specification.body.paths["/embed/connect"]);
     assert.ok(specification.body.paths["/health"]);
     assert.ok(specification.body.webhooks.channelEvent);
+    assert.ok(specification.body.components.securitySchemes.NeuroHubSignature);
+    assert.ok(specification.body.webhooks.channelEvent.post.responses["2XX"]);
+    assert.equal(specification.body.webhooks.channelEvent.post.security[0].NeuroHubSignature.length, 0);
     assert.equal(specification.body.paths["/api/channels"], undefined);
     assert.equal(specification.body.paths["/api/apps"], undefined);
 

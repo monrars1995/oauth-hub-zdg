@@ -510,12 +510,20 @@
   }
 
   // ── App form (drawer) ──────────────────────────────────────
+  function generateForwardSecret() {
+    var bytes = new Uint8Array(32);
+    window.crypto.getRandomValues(bytes);
+    return Array.prototype.map.call(bytes, function (value) { return value.toString(16).padStart(2, "0"); }).join("");
+  }
   function fwdRowHtml(f) {
-    f = f || { url: "", products: ["all"], enabled: true };
+    f = f || { id: "", url: "", products: ["all"], enabled: true, hasSigningSecret: false };
     var prod = (f.products && f.products.indexOf("all") < 0 && f.products[0]) ? f.products[0] : "all";
     var opts = FWD_PRODS.map(function (p) { return '<option value="' + p + '"' + (p === prod ? " selected" : "") + ">" + esc(prodLabel(p)) + "</option>"; }).join("");
-    return '<div class="fwd-row">' +
+    var secretPh = f.hasSigningSecret ? t("form.fwdSecretKeep") : t("form.fwdSecretPh");
+    return '<div class="fwd-row" data-fwd-id="' + escAttr(f.id || "") + '" data-has-secret="' + (f.hasSigningSecret ? "true" : "false") + '">' +
       '<input class="fwd-url" placeholder="' + escAttr(t("form.fwdUrlPh")) + '" value="' + escAttr(f.url) + '" />' +
+      '<input class="fwd-secret" type="password" autocomplete="new-password" placeholder="' + escAttr(secretPh) + '" />' +
+      '<button type="button" class="btn secondary fwd-gen" title="' + escAttr(t("form.fwdSecretGenerate")) + '">' + esc(t("form.fwdSecretGenerate")) + "</button>" +
       '<select class="fwd-prod">' + opts + "</select>" +
       '<label class="fwd-en"><input type="checkbox"' + (f.enabled !== false ? " checked" : "") + " /> " + esc(t("form.fwdActive")) + "</label>" +
       '<button type="button" class="btn ghost fwd-del" title="' + escAttr(t("apps.remove")) + '">×</button>' +
@@ -589,25 +597,46 @@
     ov.addEventListener("mousedown", function (e) { if (e.target === ov) closeDrawer(); });
     $("afClose").addEventListener("click", closeDrawer);
     $("afCancel").addEventListener("click", closeDrawer);
-    $("afAddFwd").addEventListener("click", function () { $("afForwards").insertAdjacentHTML("beforeend", fwdRowHtml(null)); wireFwdDeletes(); });
+    $("afAddFwd").addEventListener("click", function () { $("afForwards").insertAdjacentHTML("beforeend", fwdRowHtml(null)); wireFwdActions(); });
     $("afSave").addEventListener("click", function () { saveApp(isEdit ? app.id : null); });
-    wireFwdDeletes();
+    wireFwdActions();
     document.addEventListener("keydown", drawerKeydown);
     requestAnimationFrame(function () { ov.classList.add("open"); });
     setTimeout(function () { var f = $("afName"); if (f) f.focus(); }, 60);
   }
-  function wireFwdDeletes() {
+  function wireFwdActions() {
     Array.prototype.forEach.call(document.querySelectorAll(".fwd-del"), function (b) { b.onclick = function () { b.parentNode.parentNode.removeChild(b.parentNode); }; });
+    Array.prototype.forEach.call(document.querySelectorAll(".fwd-gen"), function (b) {
+      b.onclick = function () {
+        var input = b.parentNode.querySelector(".fwd-secret");
+        input.value = generateForwardSecret();
+        input.type = "text";
+        input.focus();
+        input.select();
+      };
+    });
   }
   function collectForwards() {
     return Array.prototype.map.call(document.querySelectorAll("#afForwards .fwd-row"), function (row) {
-      return { url: row.querySelector(".fwd-url").value.trim(), products: [row.querySelector(".fwd-prod").value], enabled: row.querySelector(".fwd-en input").checked };
+      var id = row.getAttribute("data-fwd-id") || "";
+      var secret = row.querySelector(".fwd-secret").value.trim();
+      var hasSecret = row.getAttribute("data-has-secret") === "true";
+      var secretBytes = secret ? new TextEncoder().encode(secret).length : 0;
+      if (secret && (secretBytes < 32 || secretBytes > 512)) throw new Error(t("form.fwdSecretRequired"));
+      if (!secret && !hasSecret) throw new Error(t("form.fwdSecretRequired"));
+      var forward = { url: row.querySelector(".fwd-url").value.trim(), products: [row.querySelector(".fwd-prod").value], enabled: row.querySelector(".fwd-en input").checked };
+      if (id) forward.id = id;
+      if (secret) forward.signingSecret = secret;
+      return forward;
     }).filter(function (f) { return f.url; });
   }
   function saveApp(id) {
+    var forwards;
+    try { forwards = collectForwards(); }
+    catch (e) { toast(e.message, true); return; }
     var body = {
       name: $("afName").value, appId: $("afAppId").value, apiVersion: $("afApiVersion").value,
-      wabaConfigId: $("afWaba").value, messengerConfigId: $("afMsgr").value, instagramAppId: $("afIgId").value, forwards: collectForwards(),
+      wabaConfigId: $("afWaba").value, messengerConfigId: $("afMsgr").value, instagramAppId: $("afIgId").value, forwards: forwards,
     };
     var storeEl = $("afStore"); if (storeEl) body.storeEvents = storeEl.checked;
     var embedEl = $("afEmbed"); if (embedEl) body.embedEnabled = embedEl.checked;

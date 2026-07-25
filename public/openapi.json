@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "NeuroHub Meta — Integração para parceiros",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "description": "Contrato público para incorporar o onboarding de canais Meta, receber eventos encaminhados pelo NeuroHub Meta e consultar a saúde do serviço. APIs administrativas, tokens de canal e envio de mensagens não fazem parte deste contrato.",
     "contact": {
       "name": "@goldneuron.io",
@@ -122,10 +122,10 @@
     "channelEvent": {
       "post": {
         "summary": "Evento Meta encaminhado pelo NeuroHub Meta",
-        "description": "O hub envia uma única requisição POST com os bytes JSON originais recebidos da Meta. O destino deve verificar X-Hub-Signature-256 sobre o corpo bruto e responder com qualquer status 2xx. Redirecionamentos não são seguidos e não há retry automático.",
+        "description": "O hub envia uma única requisição POST com os bytes JSON originais recebidos da Meta. O destino deve verificar X-NeuroHub-Signature-256 sobre `X-NeuroHub-Timestamp + '.' + corpo bruto`, usando somente o segredo dedicado do destino. Nunca compartilhe o App Secret da Meta. Redirecionamentos não são seguidos e não há retry automático.",
         "operationId": "receiveChannelEvent",
         "security": [
-          { "MetaSignature": [] }
+          { "NeuroHubSignature": [] }
         ],
         "parameters": [
           {
@@ -136,10 +136,20 @@
             "schema": { "type": "string" }
           },
           {
-            "name": "X-Hub-Signature-256",
+            "name": "X-NeuroHub-Timestamp",
             "in": "header",
             "required": true,
-            "description": "Assinatura original da Meta no formato sha256=<hex>. Verifique HMAC-SHA256 usando o App Secret correspondente e os bytes exatos do corpo.",
+            "description": "Unix timestamp em segundos incluído no material assinado. Rejeite entregas fora da janela anti-replay definida pelo parceiro, recomendada em 300 segundos.",
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9]{10}$"
+            }
+          },
+          {
+            "name": "X-Hub-Signature-256",
+            "in": "header",
+            "required": false,
+            "description": "Assinatura original da Meta, preservada apenas como proveniência. Não compartilhe o App Secret da Meta para verificá-la no software parceiro.",
             "schema": {
               "type": "string",
               "pattern": "^sha256=[a-fA-F0-9]{64}$"
@@ -156,7 +166,7 @@
           }
         },
         "responses": {
-          "200": {
+          "2XX": {
             "description": "Evento aceito. Qualquer resposta 2xx é considerada sucesso pelo hub."
           },
           "400": {
@@ -174,11 +184,11 @@
   },
   "components": {
     "securitySchemes": {
-      "MetaSignature": {
+      "NeuroHubSignature": {
         "type": "apiKey",
         "in": "header",
-        "name": "X-Hub-Signature-256",
-        "description": "Assinatura HMAC-SHA256 original da Meta calculada sobre os bytes exatos do corpo."
+        "name": "X-NeuroHub-Signature-256",
+        "description": "HMAC-SHA256 calculado com o segredo dedicado do destino sobre `X-NeuroHub-Timestamp + '.' + corpo bruto`."
       }
     },
     "schemas": {

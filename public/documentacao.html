@@ -68,7 +68,7 @@
       padding: .55rem .8rem; border: 1px solid var(--line-strong); border-radius: 8px;
       color: var(--text); background: #121416; text-decoration: none; font-size: .78rem; font-weight: 700;
     }
-    .button.primary { border-color: rgba(215,174,98,.55); background: var(--gold); color: #17130d; }
+
     .layout {
       width: min(1240px, calc(100% - 2rem)); margin: 0 auto;
       display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: clamp(2rem, 5vw, 5.5rem);
@@ -161,7 +161,6 @@
     }
     @media (max-width: 680px) {
       .topbar { padding-inline: 1rem; }
-      .top-actions .button:first-child { display: none; }
       .layout { width: calc(100% - 1.25rem); max-width: 1240px; }
       .hero { padding-left: 1rem; }
       h1 { font-size: clamp(2.35rem, 14vw, 3.7rem); }
@@ -175,13 +174,12 @@
 <body>
   <a class="skip" href="#conteudo">Ir para o conteúdo</a>
   <header class="topbar">
-    <a class="brand" href="/" aria-label="NeuroHub Meta">
+    <a class="brand" href="https://goldneuron.io/" target="_blank" rel="noopener" aria-label="NeuroHub Meta by @goldneuron.io">
       <img src="/assets/goldneuron_logo_mark.svg" alt="">
       <span><strong>NeuroHub Meta</strong><span>by @goldneuron.io</span></span>
     </a>
     <div class="top-actions">
       <a class="button" href="/openapi.json">OpenAPI 3.1</a>
-      <a class="button primary" href="/">Abrir painel</a>
     </div>
   </header>
 
@@ -246,7 +244,7 @@
         <h2>Do endpoint ao primeiro evento</h2>
         <div class="steps">
           <div class="step"><div><b>Prepare um endpoint público</b><p>Disponibilize uma URL HTTPS que aceite POST JSON, por exemplo <code>https://seu-software.com/webhooks/neurohub</code>.</p></div></div>
-          <div class="step"><div><b>Cadastre o destino no app</b><p>No painel, abra <strong>Apps → Editar → Outros pontos</strong>, informe a URL e selecione todos os eventos ou um produto específico.</p></div></div>
+          <div class="step"><div><b>Cadastre o destino e gere o segredo</b><p>No painel, abra <strong>Apps → Editar → Outros pontos</strong>, informe a URL, selecione o produto e gere um segredo dedicado. O gerador usa 256 bits de entropia e entrega 64 caracteres hexadecimais.</p></div></div>
           <div class="step"><div><b>Preserve o corpo bruto</b><p>Leia os bytes originais antes do parse JSON. Eles são necessários para validar a assinatura HMAC.</p></div></div>
           <div class="step"><div><b>Responda rapidamente com 2xx</b><p>Confirme o recebimento após persistir ou enfileirar o evento. Processamento pesado deve ocorrer de forma assíncrona no seu software.</p></div></div>
           <div class="step"><div><b>Teste com um evento real</b><p>Envie uma mensagem ao canal conectado e confirme o status do forwarding no painel do hub.</p></div></div>
@@ -261,7 +259,9 @@
           <div class="contract"><dt>Método</dt><dd><code>POST</code></dd></div>
           <div class="contract"><dt>Content-Type</dt><dd><code>application/json</code></dd></div>
           <div class="contract"><dt>X-Hub-App</dt><dd>Identificador interno do app que recebeu o evento.</dd></div>
-          <div class="contract"><dt>X-Hub-Signature-256</dt><dd>Assinatura original da Meta no formato <code>sha256=&lt;hex&gt;</code>.</dd></div>
+          <div class="contract"><dt>X-NeuroHub-Timestamp</dt><dd>Unix timestamp, em segundos, incluído no material assinado para proteção contra replay.</dd></div>
+          <div class="contract"><dt>X-NeuroHub-Signature-256</dt><dd>HMAC próprio do hub no formato <code>sha256=&lt;hex&gt;</code>, calculado com o segredo dedicado do destino.</dd></div>
+          <div class="contract"><dt>X-Hub-Signature-256</dt><dd>Assinatura original da Meta, preservada apenas como proveniência. Não exige nem justifica compartilhar o App Secret.</dd></div>
           <div class="contract"><dt>Corpo</dt><dd>Envelope original da Meta; a estrutura varia por produto e tipo de evento.</dd></div>
           <div class="contract"><dt>Sucesso</dt><dd>Qualquer resposta HTTP entre <code>200</code> e <code>299</code>.</dd></div>
         </dl>
@@ -292,13 +292,17 @@
       <section id="assinatura">
         <span class="section-no">04 / SEGURANÇA</span>
         <h2>Verifique antes de processar</h2>
-        <p class="lead">Calcule HMAC-SHA256 sobre os bytes exatos do corpo usando o App Secret correspondente. Compare o resultado em tempo constante com <code>X-Hub-Signature-256</code>.</p>
+        <p class="lead">Valide <code>X-NeuroHub-Signature-256</code> com o segredo dedicado do destino. O material assinado é <code>timestamp + "." + corpo bruto</code>. Rejeite timestamps fora de uma janela curta e compare o HMAC em tempo constante.</p>
         <div class="code-wrap">
           <span class="code-label">Node.js</span>
           <pre><code>import { createHmac, timingSafeEqual } from "node:crypto";
 
-function validSignature(rawBody, received, appSecret) {
-  const expected = "sha256=" + createHmac("sha256", appSecret)
+function validSignature(rawBody, timestamp, received, partnerSecret) {
+  if (!/^\d{10}$/.test(timestamp)) return false;
+  if (Math.abs(Date.now() / 1000 - Number(timestamp)) &gt; 300) return false;
+
+  const expected = "sha256=" + createHmac("sha256", partnerSecret)
+    .update(timestamp + ".")
     .update(rawBody)
     .digest("hex");
 
@@ -307,7 +311,7 @@ function validSignature(rawBody, received, appSecret) {
   return a.length === b.length &amp;&amp; timingSafeEqual(a, b);
 }</code></pre>
         </div>
-        <div class="callout danger"><strong>Importante:</strong> não faça <code>JSON.parse</code> e depois serialize novamente antes de validar. Espaços, ordem e codificação podem mudar e invalidar o HMAC. O App Secret deve ser compartilhado com o parceiro por um canal seguro, nunca colocado no frontend.</div>
+        <div class="callout danger"><strong>Importante:</strong> não faça <code>JSON.parse</code> antes de validar e nunca compartilhe o App Secret da Meta. Compartilhe somente o segredo dedicado do destino, por canal seguro, e rotacione-o informando um novo valor no editor.</div>
       </section>
 
       <section id="onboarding">
@@ -353,8 +357,8 @@ function validSignature(rawBody, received, appSecret) {
           <div class="card"><b>Uma tentativa</b><p>Cada evento gera uma tentativa por destino. Não há retry automático; use alertas e reconciliação no parceiro.</p></div>
           <div class="card"><b>Timeout controlado</b><p>O padrão operacional é 10 segundos. Responda após enfileirar, não após concluir tarefas pesadas.</p></div>
           <div class="card"><b>Sem redirects</b><p>O hub não segue 3xx. Configure diretamente a URL HTTPS final.</p></div>
-          <div class="card"><b>Rede pública</b><p>Destinos localhost, redes privadas, reservadas ou DNS inseguro são bloqueados.</p></div>
-          <div class="card"><b>Corpo original</b><p>A assinatura e o payload encaminhados correspondem aos bytes aceitos da Meta.</p></div>
+          <div class="card"><b>Rede pública</b><p>Formato e IPs literais são validados ao salvar; DNS privado/reservado é bloqueado novamente antes de cada envio.</p></div>
+          <div class="card"><b>Corpo original</b><p>A assinatura NeuroHub é calculada sobre o timestamp e os mesmos bytes de payload aceitos da Meta.</p></div>
           <div class="card"><b>2xx é sucesso</b><p>Qualquer outro status é registrado como falha no histórico, quando o histórico estiver ativo.</p></div>
         </div>
       </section>
@@ -362,7 +366,7 @@ function validSignature(rawBody, received, appSecret) {
       <section id="problemas" class="faq">
         <span class="section-no">08 / TROUBLESHOOTING</span>
         <h2>Solução de problemas</h2>
-        <details><summary>O destino foi recusado ao salvar</summary><p>Use HTTPS, sem credenciais na URL, sem fragmento e com DNS resolvendo apenas para endereços públicos. Domínios locais e redes privadas são bloqueados.</p></details>
+        <details><summary>O destino foi recusado ao salvar</summary><p>Use HTTPS, sem credenciais na URL, sem fragmento e sem host local ou IP literal privado/reservado. Para domínios, a resolução DNS é validada e fixada imediatamente antes de cada entrega.</p></details>
         <details><summary>O evento não chegou ao meu software</summary><p>Confirme que o destino está ativo, que o filtro inclui o produto correto e que a Meta enviou um webhook assinado ao app. Consulte o status do forwarding no histórico do painel.</p></details>
         <details><summary>O onboarding mostra “indisponível”</summary><p>O app pode estar sem embed público, sem credenciais completas ou com um canal inválido. Gere novamente o snippet no card do app após salvar a configuração.</p></details>
         <details><summary>Posso listar canais ou enviar mensagens por essa API?</summary><p>Não neste contrato público. O hub mantém tokens e inventário protegidos e não funciona como proxy de envio. Para uma integração parceira com API própria e credenciais dedicadas, fale com a @goldneuron.io.</p></details>

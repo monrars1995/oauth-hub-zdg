@@ -98,7 +98,11 @@ function transformSecrets(file: string, data: unknown, encrypt: boolean): unknow
         const value = app[field];
         if (typeof value === "string") (app as any)[field] = transform(value);
       }
-      app.forwards = (app.forwards || []).map((forward) => ({ ...forward, url: transform(forward.url) }));
+      app.forwards = (app.forwards || []).map((forward) => ({
+        ...forward,
+        url: transform(forward.url),
+        signingSecret: transform(forward.signingSecret || ""),
+      }));
       return app;
     });
   }
@@ -127,8 +131,9 @@ function containsLegacyPlaintext(file: string, data: unknown): boolean {
         const value = app[field];
         return typeof value === "string" && !!value && !value.startsWith(ENCRYPTED_PREFIX);
       });
-      const plainForward = Array.isArray(app.forwards) && app.forwards.some(
-        (forward: any) => typeof forward?.url === "string" && !!forward.url && !forward.url.startsWith(ENCRYPTED_PREFIX)
+      const plainForward = Array.isArray(app.forwards) && app.forwards.some((forward: any) =>
+        (typeof forward?.url === "string" && !!forward.url && !forward.url.startsWith(ENCRYPTED_PREFIX)) ||
+        (typeof forward?.signingSecret === "string" && !!forward.signingSecret && !forward.signingSecret.startsWith(ENCRYPTED_PREFIX))
       );
       return plainSecret || plainForward;
     });
